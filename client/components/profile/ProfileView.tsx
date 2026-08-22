@@ -66,7 +66,9 @@ export default function ProfileView({ userId, editable }: ProfileViewProps) {
   }
 
   const { user, privateInfo, skills, certifications } = bundle;
-  const showSalaryTab = viewer?.role === "admin";
+  const isAdminViewer = viewer?.role === "admin";
+  // Employees can see their own payroll read-only; only Admin/HR can edit any wage structure.
+  const showSalaryTab = isAdminViewer || viewer?.id === user.id;
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,7 +115,9 @@ export default function ProfileView({ userId, editable }: ProfileViewProps) {
           onChanged={handleCertificationsChanged}
         />
       )}
-      {activeTab === "salary" && showSalaryTab && <SalaryInfoTab />}
+      {activeTab === "salary" && showSalaryTab && (
+        <SalaryInfoTab userId={user.id} canEdit={isAdminViewer} />
+      )}
     </div>
   );
 }

@@ -281,3 +281,15 @@ export async function getSalaryBreakdown(userId: string): Promise<SalaryBreakdow
   const structure = await getSalaryStructure(userId);
   return structure ? computeSalaryBreakdown(structure) : undefined;
 }
+
+export async function updateSalaryStructure(
+  userId: string,
+  patch: Omit<SalaryStructure, "userId">,
+): Promise<SalaryStructure | undefined> {
+  const index = db.payroll.findIndex((structure) => structure.userId === userId);
+  if (index === -1) return resolveAfter(undefined);
+
+  db.payroll[index] = { ...patch, userId };
+  emitMockEvent("payroll:update");
+  return resolveAfter(db.payroll[index]);
+}
