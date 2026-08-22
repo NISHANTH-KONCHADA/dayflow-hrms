@@ -4,6 +4,7 @@ import { EmployeeController } from '../controllers/employee.controller.js';
 import { SkillController } from '../controllers/skill.controller.js';
 import { CertificationController } from '../controllers/certification.controller.js';
 import { DocumentController } from '../controllers/document.controller.js';
+import { PrivateInfoController } from '../controllers/privateInfo.controller.js';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -270,10 +271,38 @@ const uploadResumeSchema = {
   }),
 };
 
+const updatePrivateInfoSchema = {
+  body: z.object({
+    dateOfBirth: z.string().optional(),
+    gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']).optional(),
+    maritalStatus: z.string().optional(),
+    nationality: z.string().optional(),
+    address: z.string().optional(),
+    panNumber: z.string().optional(),
+    uanNumber: z.string().optional(),
+    personalEmail: z.string().email().optional(),
+    phone: z.string().optional(),
+  }),
+};
+
 // Current Employee Profile (/me)
 router.get('/me', EmployeeController.getCurrentProfile);
 router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
 router.put('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
+
+// Current Employee Private Info (/me/private-info)
+router.get('/me/private-info', (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return PrivateInfoController.get(req, res, next);
+});
+router.patch('/me/private-info', validate(updatePrivateInfoSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return PrivateInfoController.update(req, res, next);
+});
+router.put('/me/private-info', validate(updatePrivateInfoSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return PrivateInfoController.update(req, res, next);
+});
 
 // Current Employee Resume (/me/resume)
 router.get('/me/resume', DocumentController.getResume);
@@ -346,6 +375,11 @@ router.delete('/:id/certifications/:certificationId', validate(deleteEmpCertSche
 router.get('/:id/documents', validate(listDocumentsSchema), DocumentController.getAll);
 router.post('/:id/documents', validate({ params: z.object({ id: z.string().uuid() }), body: addDocumentSchema.body }), DocumentController.create);
 router.delete('/:id/documents/:documentId', validate(deleteEmpDocSchema), DocumentController.delete);
+
+// Employee Private Info (/:id/private-info)
+router.get('/:id/private-info', validate(getByIdSchema), PrivateInfoController.get);
+router.patch('/:id/private-info', validate({ params: z.object({ id: z.string().uuid() }), body: updatePrivateInfoSchema.body }), PrivateInfoController.update);
+router.put('/:id/private-info', validate({ params: z.object({ id: z.string().uuid() }), body: updatePrivateInfoSchema.body }), PrivateInfoController.update);
 
 // Employee CRUD (/ and /:id)
 router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);
