@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import authRoutes from './routes/auth.routes.js';
 import employeeRoutes from './routes/employee.routes.js';
 import companyRoutes from './routes/company.routes.js';
+import attendanceRoutes from './routes/attendance.routes.js';
 import { errorHandler } from './utils/errorHandler.js';
 
 const app = express();
@@ -34,6 +35,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/company', companyRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
