@@ -1,4 +1,4 @@
-import { db } from "@/lib/mock/db";
+import { db, generateId } from "@/lib/mock/db";
 
 import type {
   AttendanceRecord,
@@ -67,6 +67,41 @@ export async function getProfileBundle(userId: string): Promise<ProfileBundle | 
 
   if (!user) return null;
   return { user, privateInfo, skills, certifications };
+}
+
+type EditableUserFields = Partial<
+  Pick<User, "phone" | "address" | "profilePictureUrl" | "about" | "interests" | "resumeUrl">
+>;
+
+export async function updateUser(userId: string, patch: EditableUserFields): Promise<User | undefined> {
+  const user = db.users.find((candidate) => candidate.id === userId);
+  if (user) {
+    Object.assign(user, patch);
+  }
+  return resolveAfter(user);
+}
+
+export async function addSkill(userId: string, name: string): Promise<Skill[]> {
+  db.skills.push({ id: generateId("sk"), userId, name });
+  return getSkills(userId);
+}
+
+export async function removeSkill(skillId: string, userId: string): Promise<Skill[]> {
+  db.skills = db.skills.filter((skill) => skill.id !== skillId);
+  return getSkills(userId);
+}
+
+export async function addCertification(
+  userId: string,
+  input: { name: string; issuer: string; issuedDate: string },
+): Promise<Certification[]> {
+  db.certifications.push({ id: generateId("cert"), userId, fileUrl: null, ...input });
+  return getCertifications(userId);
+}
+
+export async function removeCertification(certId: string, userId: string): Promise<Certification[]> {
+  db.certifications = db.certifications.filter((certification) => certification.id !== certId);
+  return getCertifications(userId);
 }
 
 export function getAttendanceForUser(userId: string): Promise<AttendanceRecord[]> {

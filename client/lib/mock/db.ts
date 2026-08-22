@@ -35,3 +35,8 @@ export const db = {
   leaveRequests: structuredClone(leaveRequestsData) as LeaveRequest[],
   payroll: structuredClone(payrollData) as SalaryStructure[],
 };
+
+/** Cheap unique id for records created by mock write operations. */
+export function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
