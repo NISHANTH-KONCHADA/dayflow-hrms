@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { EmployeeController } from '../controllers/employee.controller.js';
 import { SkillController } from '../controllers/skill.controller.js';
+import { CertificationController } from '../controllers/certification.controller.js';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -171,6 +172,56 @@ const removeEmployeeSkillSchema = {
   }),
 };
 
+const addCertificationSchema = {
+  body: z.object({
+    name: z.string().min(1, 'Certification name is required'),
+    issuer: z.string().optional(),
+    issuedAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    documentUrl: z.string().optional(),
+  }),
+};
+
+const updateMeCertSchema = {
+  params: z.object({
+    certificationId: z.string().uuid('Invalid certification ID'),
+  }),
+  body: z.object({
+    name: z.string().min(1).optional(),
+    issuer: z.string().optional(),
+    issuedAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    documentUrl: z.string().optional(),
+  }),
+};
+
+const updateEmpCertSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+    certificationId: z.string().uuid('Invalid certification ID'),
+  }),
+  body: z.object({
+    name: z.string().min(1).optional(),
+    issuer: z.string().optional(),
+    issuedAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    documentUrl: z.string().optional(),
+  }),
+};
+
+const deleteMeCertSchema = {
+  params: z.object({
+    certificationId: z.string().uuid('Invalid certification ID'),
+  }),
+};
+
+const deleteEmpCertSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+    certificationId: z.string().uuid('Invalid certification ID'),
+  }),
+};
+
 // Current Employee Profile (/me)
 router.get('/me', EmployeeController.getCurrentProfile);
 router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
@@ -190,10 +241,39 @@ router.delete('/me/skills/:skillId', validate(removeMeSkillSchema), (req, res, n
   return SkillController.removeSkill(req, res, next);
 });
 
+// Current Employee Certifications (/me/certifications)
+router.get('/me/certifications', (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return CertificationController.getAll(req, res, next);
+});
+router.post('/me/certifications', validate(addCertificationSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return CertificationController.create(req, res, next);
+});
+router.patch('/me/certifications/:certificationId', validate(updateMeCertSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return CertificationController.update(req, res, next);
+});
+router.put('/me/certifications/:certificationId', validate(updateMeCertSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return CertificationController.update(req, res, next);
+});
+router.delete('/me/certifications/:certificationId', validate(deleteMeCertSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return CertificationController.delete(req, res, next);
+});
+
 // Employee Skills (/:id/skills)
 router.get('/:id/skills', validate(getByIdSchema), SkillController.getEmployeeSkills);
 router.post('/:id/skills', validate(assignEmployeeSkillSchema), SkillController.assignSkill);
 router.delete('/:id/skills/:skillId', validate(removeEmployeeSkillSchema), SkillController.removeSkill);
+
+// Employee Certifications (/:id/certifications)
+router.get('/:id/certifications', validate(getByIdSchema), CertificationController.getAll);
+router.post('/:id/certifications', validate({ params: z.object({ id: z.string().uuid() }), body: addCertificationSchema.body }), CertificationController.create);
+router.patch('/:id/certifications/:certificationId', validate(updateEmpCertSchema), CertificationController.update);
+router.put('/:id/certifications/:certificationId', validate(updateEmpCertSchema), CertificationController.update);
+router.delete('/:id/certifications/:certificationId', validate(deleteEmpCertSchema), CertificationController.delete);
 
 // Employee CRUD (/ and /:id)
 router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);
