@@ -78,4 +78,65 @@ export class PayrollController {
       next(err);
     }
   }
+
+  static async getPayslipsAdmin(req, res, next) {
+    try {
+      const { employeeId, payrollRunId, status, year, month, search, page, limit } = req.query;
+      const result = await PayrollService.getPayslipsAdmin({
+        companyId: req.user.companyId,
+        employeeId,
+        payrollRunId,
+        status,
+        year,
+        month,
+        search,
+        page,
+        limit,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getPersonalPayslips(req, res, next) {
+    try {
+      const { year, month, page, limit } = req.query;
+      const result = await PayrollService.getPersonalPayslips({
+        requestingUser: req.user,
+        year,
+        month,
+        page,
+        limit,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getPayslipById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await PayrollService.getPayslipById({
+        requestingUser: req.user,
+        id,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

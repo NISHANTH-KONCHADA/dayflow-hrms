@@ -501,4 +501,180 @@ export class PayrollService {
       },
     };
   }
+
+  /**
+   * Admin view: Get all payslips across company.
+   */
+  static async getPayslipsAdmin({
+    companyId,
+    employeeId,
+    payrollRunId,
+    status,
+    year,
+    month,
+    search,
+    page = 1,
+    limit = 20,
+  }) {
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const where = {
+      employee: {
+        companyId,
+        ...(search && {
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { employeeCode: { contains: search, mode: 'insensitive' } },
+          ],
+        }),
+      },
+      ...(employeeId && { employeeId }),
+      ...(payrollRunId && { payrollRunId }),
+      ...(status && { status }),
+    };
+
+    if (year || month) {
+      where.payrollRun = {};
+      if (year && month) {
+        const y = parseInt(year, 10);
+        const m = parseInt(month, 10);
+        const start = new Date(Date.UTC(y, m - 1, 1));
+        const end = new Date(Date.UTC(y, m, 0));
+        where.payrollRun.periodStart = { gte: start, lte: end };
+      } else if (year) {
+        const y = parseInt(year, 10);
+        where.payrollRun.periodStart = {
+          gte: new Date(Date.UTC(y, 0, 1)),
+          lte: new Date(Date.UTC(y, 11, 31)),
+        };
+      }
+    }
+
+    const [total, payslips] = await Promise.all([
+      prisma.payslip.count({ where }),
+      prisma.payslip.findMany({
+        where,
+        include: {
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              employeeCode: true,
+              profilePictureUrl: true,
+              department: { select: { id: true, name: true } },
+              jobPosition: { select: { id: true, name: true } },
+            },
+          },
+          payrollRun: {
+            select: { id: true, periodStart: true, periodEnd: true, status: true },
+          },
+          lines: { orderBy: { sequence: 'asc' } },
+        },
+        orderBy: { generatedAt: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+    ]);
+
+    const formatted = payslips.map((p) => ({
+      ...p,
+      monthlyWage: Number(p.monthlyWage),
+      payableDays: Number(p.payableDays),
+      unpaidDays: Number(p.unpaidDays),
+      grossSalary: Number(p.grossSalary),
+      employeePf: Number(p.employeePf),
+      professionalTax: Number(p.professionalTax),
+      otherDeductions: Number(p.otherDeductions),
+      totalDeductions: Number(p.totalDeductions),
+      netSalary: Number(p.netSalary),
+      employerPf: Number(p.employerPf),
+      lines: p.lines.map((l) => ({ ...l, amount: Number(l.amount) })),
+    }));
+
+    return {
+      payslips: formatted,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      },
+    };
+  }
+
+  /**
+   * Employee self view: Get personal payslips.
+   */
+  static async getPersonalPayslips({ requestingUser, year, month, page = 1, limit = 20 }) {
+    const employeeId = requestingUser.employeeId;
+    if (!employeeId) {
+      throw new ApiError('No employee profile associated with this user account', 400);
+    }
+
+    return this.getEmployeePayroll({
+      companyId: requestingUser.companyId,
+      employeeId,
+      year,
+      month,
+      page,
+      limit,
+    });
+  }
+
+  /**
+   * Get single payslip by ID.
+   */
+  static async getPayslipById({ requestingUser, id }) {
+    const payslip = await prisma.payslip.findUnique({
+      where: { id },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            companyId: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            profilePictureUrl: true,
+            department: { select: { id: true, name: true } },
+            jobPosition: { select: { id: true, name: true } },
+          },
+        },
+        payrollRun: {
+          select: { id: true, periodStart: true, periodEnd: true, status: true },
+        },
+        lines: { orderBy: { sequence: 'asc' } },
+      },
+    });
+
+    if (!payslip || payslip.employee.companyId !== requestingUser.companyId) {
+      throw new ApiError('Payslip not found', 404);
+    }
+
+    if (
+      requestingUser.role === 'EMPLOYEE' &&
+      payslip.employeeId !== requestingUser.employeeId
+    ) {
+      throw new ApiError('Forbidden: Access denied to this payslip', 403);
+    }
+
+    return {
+      ...payslip,
+      monthlyWage: Number(payslip.monthlyWage),
+      payableDays: Number(payslip.payableDays),
+      unpaidDays: Number(payslip.unpaidDays),
+      grossSalary: Number(payslip.grossSalary),
+      employeePf: Number(payslip.employeePf),
+      professionalTax: Number(payslip.professionalTax),
+      otherDeductions: Number(payslip.otherDeductions),
+      totalDeductions: Number(payslip.totalDeductions),
+      netSalary: Number(payslip.netSalary),
+      employerPf: Number(payslip.employerPf),
+      lines: payslip.lines.map((l) => ({ ...l, amount: Number(l.amount) })),
+    };
+  }
 }

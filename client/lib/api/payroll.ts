@@ -41,3 +41,44 @@ export async function getPayrollRunById(runId: string) {
   if (!response.ok) throw new Error(result.message || 'Failed to fetch payroll run details');
   return result.data;
 }
+
+export async function getPayslipsAdmin(params?: {
+  employeeId?: string;
+  payrollRunId?: string;
+  status?: string;
+  year?: number;
+  month?: number;
+  search?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  const url = `${API_BASE_URL}/payslips${query ? `?${query}` : ''}`;
+  const response = await fetch(url, { credentials: 'include' });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch payslips');
+  return result.data;
+}
+
+export async function getPersonalPayslips(params?: {
+  year?: number;
+  month?: number;
+  page?: number;
+  limit?: number;
+}) {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  const url = `${API_BASE_URL}/payslips/me${query ? `?${query}` : ''}`;
+  const response = await fetch(url, { credentials: 'include' });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch personal payslips');
+  return result.data;
+}
+
+export async function getPayslipById(id: string) {
+  const response = await fetch(`${API_BASE_URL}/payslips/${id}`, {
+    credentials: 'include',
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch payslip details');
+  return result.data;
+}
