@@ -523,7 +523,6 @@ export class EmployeeService {
         companyId,
         OR: [
           { id: employeeId },
-          { userId: employeeId },
           { user: { id: employeeId } },
         ],
       },
@@ -662,7 +661,6 @@ export class EmployeeService {
         companyId,
         OR: [
           { id: employeeId },
-          { userId: employeeId },
           { user: { id: employeeId } },
         ],
       },
@@ -902,7 +900,6 @@ export class EmployeeService {
         companyId,
         OR: [
           { id: employeeId },
-          { userId: employeeId },
           { user: { id: employeeId } },
         ],
       },

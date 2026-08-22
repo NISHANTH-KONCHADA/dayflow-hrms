@@ -40,7 +40,7 @@ export default function EmployeeDashboard() {
       }
 
       if (leaveRes) {
-        const requests = Array.isArray(leaveRes) ? leaveRes : leaveRes.leaveRequests || [];
+        const requests = Array.isArray(leaveRes) ? leaveRes : leaveRes.requests || leaveRes.leaveRequests || [];
         setRecentLeave(requests.slice(0, 3));
       }
     } catch (err) {

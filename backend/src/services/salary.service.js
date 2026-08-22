@@ -113,7 +113,13 @@ export class SalaryService {
    */
   static async getSalaryStructure({ companyId, employeeId }) {
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
     });
 
     if (!employee) {
@@ -121,7 +127,7 @@ export class SalaryService {
     }
 
     const structure = await prisma.salaryStructure.findUnique({
-      where: { employeeId },
+      where: { employeeId: employee.id },
       include: {
         components: {
           orderBy: { sequence: 'asc' },
@@ -177,7 +183,13 @@ export class SalaryService {
    */
   static async createSalaryStructure({ companyId, employeeId, data }) {
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
     });
 
     if (!employee) {
@@ -185,7 +197,7 @@ export class SalaryService {
     }
 
     const existing = await prisma.salaryStructure.findUnique({
-      where: { employeeId },
+      where: { employeeId: employee.id },
     });
 
     if (existing) {
@@ -201,7 +213,7 @@ export class SalaryService {
       const structure = await tx.salaryStructure.create({
         data: {
           companyId,
-          employeeId,
+          employeeId: employee.id,
           wageType: 'FIXED',
           monthlyWage: breakdown.monthlyWage,
           currency: data.currency || 'INR',
@@ -291,7 +303,13 @@ export class SalaryService {
    */
   static async updateSalaryStructure({ companyId, employeeId, updateData }) {
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
     });
 
     if (!employee) {
@@ -299,13 +317,13 @@ export class SalaryService {
     }
 
     let existingStructure = await prisma.salaryStructure.findUnique({
-      where: { employeeId },
+      where: { employeeId: employee.id },
       include: { components: true },
     });
 
     // If structure doesn't exist yet, delegate to create
     if (!existingStructure) {
-      return this.createSalaryStructure({ companyId, employeeId, data: updateData });
+      return this.createSalaryStructure({ companyId, employeeId: employee.id, data: updateData });
     }
 
     const basicComp = existingStructure.components.find((c) => c.code === 'BASIC');

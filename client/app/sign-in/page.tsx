@@ -2,12 +2,13 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import TextField from "@/components/ui/TextField";
 import Button from "@/components/ui/Button";
 
 const DEMO_ACCOUNTS = [
-  { label: "Super Admin", identifier: "admin@dayflow.com", pass: "Admin@123456" },
+  { label: "Super Admin / HR", identifier: "admin@dayflow.com", pass: "Admin@123456" },
   { label: "Employee (John Doe)", identifier: "john.doe@dayflow.com", pass: "Password@123" },
 ];
 
@@ -102,6 +103,13 @@ export default function SignInPage() {
           <Button type="submit" loading={submitting}>
             Sign In
           </Button>
+
+          <p className="text-center text-xs text-muted mt-1">
+            Need to register a new organization?{" "}
+            <Link href="/register" className="font-semibold text-primary hover:underline">
+              Register Company &amp; HR
+            </Link>
+          </p>
         </form>
 
         <div className="mt-4 rounded-lg border border-dashed border-border p-4 text-xs text-muted">

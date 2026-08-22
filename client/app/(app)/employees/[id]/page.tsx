@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getEmployeeById, updateEmployee, getDepartments, getJobPositions } from "@/lib/api/employee";
+import { getEmployeeSalary, updateEmployeeSalary } from "@/lib/api/salary";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import TextField from "@/components/ui/TextField";
@@ -13,16 +14,19 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const { user: currentUser, refreshUser } = useAuth();
 
   const [employee, setEmployee] = useState<any | null>(null);
+  const [salaryData, setSalaryData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingSalary, setLoadingSalary] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "private" | "schedule" | "salary">("profile");
 
-  // Edit Modal State
+  // General Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editPhone, setEditPhone] = useState("");
   const [editPersonalEmail, setEditPersonalEmail] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editAbout, setEditAbout] = useState("");
   const [editHobbies, setEditHobbies] = useState("");
+
   // Admin editable fields
   const [editDeptId, setEditDeptId] = useState("");
   const [editPosId, setEditPosId] = useState("");
@@ -32,6 +36,20 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const [editBankAcc, setEditBankAcc] = useState("");
   const [editBankName, setEditBankName] = useState("");
   const [editIfsc, setEditIfsc] = useState("");
+
+  // Salary Configurator Modal State (HR/Admin)
+  const [showSalaryModal, setShowSalaryModal] = useState(false);
+  const [salWage, setSalWage] = useState(50000);
+  const [salBasicPct, setSalBasicPct] = useState(50);
+  const [salHraPct, setSalHraPct] = useState(50);
+  const [salBonusPct, setSalBonusPct] = useState(8.33);
+  const [salLtaPct, setSalLtaPct] = useState(8.33);
+  const [salStdAllow, setSalStdAllow] = useState(4167);
+  const [salEmpPfRate, setSalEmpPfRate] = useState(12);
+  const [salEmprPfRate, setSalEmprPfRate] = useState(12);
+  const [salProfTax, setSalProfTax] = useState(200);
+  const [savingSalary, setSavingSalary] = useState(false);
+  const [salaryError, setSalaryError] = useState<string | null>(null);
 
   const [departments, setDepartments] = useState<any[]>([]);
   const [jobPositions, setJobPositions] = useState<any[]>([]);
@@ -67,9 +85,39 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  async function loadSalary() {
+    setLoadingSalary(true);
+    try {
+      const data = await getEmployeeSalary(id);
+      setSalaryData(data);
+      if (data) {
+        setSalWage(data.monthlyWage || 50000);
+        setSalBasicPct(data.breakdown?.basicPct ?? 50);
+        setSalHraPct(data.breakdown?.hraPct ?? 50);
+        setSalBonusPct(data.breakdown?.performanceBonusPct ?? 8.33);
+        setSalLtaPct(data.breakdown?.ltaPct ?? 8.33);
+        setSalStdAllow(data.breakdown?.standardAllowance ?? 4167);
+        setSalEmpPfRate(data.employeePfRate ?? 12);
+        setSalEmprPfRate(data.employerPfRate ?? 12);
+        setSalProfTax(data.professionalTax ?? 200);
+      }
+    } catch (err) {
+      console.warn("Salary structure not configured yet for this employee", err);
+      setSalaryData(null);
+    } finally {
+      setLoadingSalary(false);
+    }
+  }
+
   useEffect(() => {
     loadEmployee();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "salary") {
+      loadSalary();
+    }
+  }, [activeTab, id]);
 
   useEffect(() => {
     if (isAdminOrHr) {
@@ -117,6 +165,49 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  async function handleSaveSalary(e: React.FormEvent) {
+    e.preventDefault();
+    setSalaryError(null);
+    setSavingSalary(true);
+    try {
+      await updateEmployeeSalary(id, {
+        monthlyWage: Number(salWage),
+        basicPct: Number(salBasicPct),
+        hraPct: Number(salHraPct),
+        performanceBonusPct: Number(salBonusPct),
+        ltaPct: Number(salLtaPct),
+        standardAllowance: Number(salStdAllow),
+        employeePfRate: Number(salEmpPfRate),
+        employerPfRate: Number(salEmprPfRate),
+        professionalTax: Number(salProfTax),
+      });
+
+      setShowSalaryModal(false);
+      await loadSalary();
+      await loadEmployee();
+    } catch (err: any) {
+      setSalaryError(err.message || "Failed to update salary structure");
+    } finally {
+      setSavingSalary(false);
+    }
+  }
+
+  // Real-time autocalculation math for HR Salary Configurator
+  const calcBasic = Math.round(((Number(salWage) || 0) * (Number(salBasicPct) || 0)) / 100);
+  const calcHra = Math.round((calcBasic * (Number(salHraPct) || 0)) / 100);
+  const calcBonus = Math.round((calcBasic * (Number(salBonusPct) || 0)) / 100);
+  const calcLta = Math.round((calcBasic * (Number(salLtaPct) || 0)) / 100);
+  const calcStd = Number(salStdAllow) || 0;
+  const calcAllocated = calcBasic + calcHra + calcBonus + calcLta + calcStd;
+  const calcRemainder = Math.max(0, (Number(salWage) || 0) - calcAllocated);
+  const calcEmpPf = Math.round((calcBasic * (Number(salEmpPfRate) || 0)) / 100);
+  const calcEmprPf = Math.round((calcBasic * (Number(salEmprPfRate) || 0)) / 100);
+  const calcPTax = Number(salProfTax) || 0;
+  const calcTotalDeductions = calcEmpPf + calcPTax;
+  const calcGrossMonthly = calcAllocated + calcRemainder;
+  const calcNetMonthly = Math.max(0, calcGrossMonthly - calcTotalDeductions);
+  const calcAnnualCTC = calcGrossMonthly * 12;
+
   if (loading) {
     return (
       <div className="flex justify-center py-16 text-sm text-muted">
@@ -133,7 +224,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const sal = employee.salaryStructure;
+  const sal = salaryData || employee.salaryStructure;
+  const bd = sal?.breakdown || sal;
   const sched = employee.workingSchedule;
   const bank = employee.bankDetails;
 
@@ -342,39 +434,214 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {/* Salary & Pay Structure Tab */}
       {activeTab === "salary" && (
-        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-semibold text-foreground">Compensation Breakdown</h3>
-            <span className="text-lg font-bold text-foreground">
-              ₹{sal?.monthlyWage ? Number(sal.monthlyWage).toLocaleString() : "0"} / month
-            </span>
+        <div className="flex flex-col gap-6">
+          {/* Summary Header */}
+          <div className="rounded-lg border border-border bg-surface p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Compensation Package &amp; Auto-Calculated Breakdown</h3>
+              <p className="text-xs text-muted">Auto-computed earnings, deductions, gross salary, and net transfer amount.</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs text-muted font-medium">Monthly Gross Wage</p>
+                <p className="text-xl font-bold text-foreground">
+                  ₹{bd?.monthlyWage ? Number(bd.monthlyWage).toLocaleString() : "0"} / mo
+                </p>
+              </div>
+
+              {isAdminOrHr && (
+                <Button onClick={() => setShowSalaryModal(true)}>
+                  Configure Salary
+                </Button>
+              )}
+            </div>
           </div>
 
-          {!sal ? (
-            <p className="text-xs text-muted">No salary structure configured for this employee.</p>
+          {loadingSalary ? (
+            <div className="py-8 text-center text-sm text-muted">Loading salary structure...</div>
+          ) : !bd ? (
+            <div className="rounded-lg border border-border bg-surface p-8 text-center text-muted">
+              No salary structure configured for this employee yet. Click &quot;Configure Salary&quot; above to set up wage components.
+            </div>
           ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-muted bg-muted/20 p-2 rounded">
-                <span>Component Name</span>
-                <span className="text-right">Monthly Value (₹)</span>
-              </div>
-              <div className="divide-y divide-border text-xs">
-                {sal.components?.map((c: any) => (
-                  <div key={c.id || c.code} className="flex items-center justify-between py-2">
-                    <span className="text-foreground">{c.name}</span>
-                    <span className="font-mono font-medium text-foreground">
-                      ₹{c.fixedAmount ? Number(c.fixedAmount).toLocaleString() : "—"}
-                    </span>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Itemized Components Card */}
+              <div className="rounded-lg border border-border bg-surface p-5 shadow-sm space-y-3">
+                <h4 className="text-sm font-semibold text-foreground border-b border-border pb-2">Auto-Calculated Salary Components</h4>
+                <div className="divide-y divide-border text-xs">
+                  <div className="flex justify-between py-2 font-medium">
+                    <span className="text-foreground">Basic Salary ({bd.basicPct ?? 50}%)</span>
+                    <span className="font-mono font-semibold">₹{Number(bd.basicAmount || 0).toLocaleString()}</span>
                   </div>
-                ))}
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted">House Rent Allowance (HRA - {bd.hraPct ?? 50}%)</span>
+                    <span className="font-mono">₹{Number(bd.hraAmount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted">Standard Allowance (Fixed)</span>
+                    <span className="font-mono">₹{Number(bd.standardAllowance || 4167).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted">Performance Bonus ({bd.performanceBonusPct ?? 8.33}%)</span>
+                    <span className="font-mono">₹{Number(bd.performanceBonusAmount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted">Leave Travel Allowance (LTA - {bd.ltaPct ?? 8.33}%)</span>
+                    <span className="font-mono">₹{Number(bd.ltaAmount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted">Fixed Allowance (Remainder)</span>
+                    <span className="font-mono">₹{Number(bd.fixedAllowanceAmount || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deductions & Net Transfer Card */}
+              <div className="rounded-lg border border-border bg-surface p-5 shadow-sm space-y-4">
+                <h4 className="text-sm font-semibold text-foreground border-b border-border pb-2">Deductions &amp; Net Take-Home</h4>
+                <div className="divide-y divide-border text-xs">
+                  <div className="flex justify-between py-2 text-status-danger">
+                    <span>Provident Fund (Employee PF - {bd.employeePfRate ?? 12}%)</span>
+                    <span className="font-mono font-medium">-₹{Number(bd.pfEmployeeAmount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-2 text-status-danger">
+                    <span>Professional Tax (PT)</span>
+                    <span className="font-mono font-medium">-₹{Number(bd.professionalTax || 200).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-2 text-muted italic">
+                    <span>Employer PF Contribution ({bd.employerPfRate ?? 12}%)</span>
+                    <span className="font-mono">₹{Number(bd.pfEmployerAmount || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="rounded-md bg-status-present/10 p-4 space-y-1">
+                  <div className="flex items-center justify-between text-sm font-bold text-status-present">
+                    <span>Net Monthly Take-Home Pay:</span>
+                    <span className="font-mono text-base">₹{Number(bd.netMonthly || 0).toLocaleString()}</span>
+                  </div>
+                  <p className="text-[11px] text-muted">
+                    Annualized Net Salary: <strong className="font-mono text-foreground">₹{Number(bd.annualNet || (bd.netMonthly * 12)).toLocaleString()} / year</strong>
+                  </p>
+                </div>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* HR Salary Structure Configurator Modal */}
+      {showSalaryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-surface p-6 shadow-xl space-y-4">
+            <div className="border-b border-border pb-3">
+              <h2 className="text-lg font-bold text-foreground">Salary Structure Auto-Calculator</h2>
+              <p className="text-xs text-muted">Adjust wage percentages and fixed allowances. All components autocalculate in real time.</p>
+            </div>
+
+            <form onSubmit={handleSaveSalary} className="flex flex-col gap-4">
+              {salaryError && (
+                <p className="rounded bg-status-danger/10 p-2 text-xs text-status-danger">{salaryError}</p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <TextField
+                  label="Monthly Gross Wage (₹)"
+                  type="number"
+                  value={salWage}
+                  onChange={(e) => setSalWage(Number(e.target.value))}
+                  required
+                />
+                <TextField
+                  label="Standard Allowance (₹)"
+                  type="number"
+                  value={salStdAllow}
+                  onChange={(e) => setSalStdAllow(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                <TextField
+                  label="Basic (% of Wage)"
+                  type="number"
+                  value={salBasicPct}
+                  onChange={(e) => setSalBasicPct(Number(e.target.value))}
+                />
+                <TextField
+                  label="HRA (% of Basic)"
+                  type="number"
+                  value={salHraPct}
+                  onChange={(e) => setSalHraPct(Number(e.target.value))}
+                />
+                <TextField
+                  label="Bonus (% of Basic)"
+                  type="number"
+                  value={salBonusPct}
+                  onChange={(e) => setSalBonusPct(Number(e.target.value))}
+                />
+                <TextField
+                  label="LTA (% of Basic)"
+                  type="number"
+                  value={salLtaPct}
+                  onChange={(e) => setSalLtaPct(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <TextField
+                  label="Employee PF Rate (%)"
+                  type="number"
+                  value={salEmpPfRate}
+                  onChange={(e) => setSalEmpPfRate(Number(e.target.value))}
+                />
+                <TextField
+                  label="Employer PF Rate (%)"
+                  type="number"
+                  value={salEmprPfRate}
+                  onChange={(e) => setSalEmprPfRate(Number(e.target.value))}
+                />
+                <TextField
+                  label="Professional Tax (₹)"
+                  type="number"
+                  value={salProfTax}
+                  onChange={(e) => setSalProfTax(Number(e.target.value))}
+                />
+              </div>
+
+              {/* Real-time Autocalculated Preview Card */}
+              <div className="rounded-md border border-border bg-background p-4 space-y-2 text-xs">
+                <p className="font-semibold text-primary uppercase text-[11px]">Real-Time Autocalculated Preview</p>
+                <div className="grid grid-cols-2 gap-2 text-foreground">
+                  <div>Basic Salary: <strong className="font-mono">₹{calcBasic.toLocaleString()}</strong></div>
+                  <div>HRA Allowance: <strong className="font-mono">₹{calcHra.toLocaleString()}</strong></div>
+                  <div>Performance Bonus: <strong className="font-mono">₹{calcBonus.toLocaleString()}</strong></div>
+                  <div>LTA Allowance: <strong className="font-mono">₹{calcLta.toLocaleString()}</strong></div>
+                  <div>Fixed Remainder: <strong className="font-mono">₹{calcRemainder.toLocaleString()}</strong></div>
+                  <div>Employee PF: <strong className="font-mono text-status-danger">₹{calcEmpPf.toLocaleString()}</strong></div>
+                </div>
+                <hr className="border-border/50 my-1" />
+                <div className="flex justify-between items-center text-sm font-bold">
+                  <span>Gross Monthly: <span className="font-mono text-foreground">₹{calcGrossMonthly.toLocaleString()}</span></span>
+                  <span>Net In-Hand Pay: <span className="font-mono text-status-present">₹{calcNetMonthly.toLocaleString()}</span></span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="secondary" onClick={() => setShowSalaryModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" loading={savingSalary}>
+                  Save Salary Structure
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-surface p-6 shadow-xl">

@@ -53,7 +53,7 @@ export default function TimeOffPage() {
 
       setLeaveTypes(types || []);
       setLeaveAllocations(allocs || []);
-      const rList = Array.isArray(reqs) ? reqs : reqs?.leaveRequests || [];
+      const rList = Array.isArray(reqs) ? reqs : reqs?.requests || reqs?.leaveRequests || [];
       setPersonalRequests(rList);
 
       if (types && types.length > 0) {
@@ -70,7 +70,7 @@ export default function TimeOffPage() {
     setLoadingQueue(true);
     try {
       const reqs = await getAdminLeaveRequests({ status: "PENDING" });
-      const rList = Array.isArray(reqs) ? reqs : reqs?.leaveRequests || [];
+      const rList = Array.isArray(reqs) ? reqs : reqs?.requests || reqs?.leaveRequests || [];
       setAdminQueue(rList);
     } catch (err) {
       console.error("Failed to load leave approval queue", err);

@@ -92,7 +92,6 @@ export class CredentialService {
         companyId,
         OR: [
           { id: employeeId },
-          { userId: employeeId },
           { user: { id: employeeId } },
         ],
       },

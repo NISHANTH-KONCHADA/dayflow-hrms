@@ -8,6 +8,9 @@ export async function getEmployeeSalary(employeeId: string) {
     credentials: 'include',
   });
   const result = await response.json();
+  if (response.status === 404) {
+    return null;
+  }
   if (!response.ok) throw new Error(result.message || 'Failed to fetch employee salary structure');
   return result.data;
 }
