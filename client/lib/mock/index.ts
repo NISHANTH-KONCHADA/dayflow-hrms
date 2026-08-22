@@ -50,6 +50,25 @@ export function getCertifications(userId: string): Promise<Certification[]> {
   return resolveAfter(db.certifications.filter((cert) => cert.userId === userId));
 }
 
+export interface ProfileBundle {
+  user: User;
+  privateInfo: EmployeePrivateInfo | undefined;
+  skills: Skill[];
+  certifications: Certification[];
+}
+
+export async function getProfileBundle(userId: string): Promise<ProfileBundle | null> {
+  const [user, privateInfo, skills, certifications] = await Promise.all([
+    getUserById(userId),
+    getPrivateInfo(userId),
+    getSkills(userId),
+    getCertifications(userId),
+  ]);
+
+  if (!user) return null;
+  return { user, privateInfo, skills, certifications };
+}
+
 export function getAttendanceForUser(userId: string): Promise<AttendanceRecord[]> {
   return resolveAfter(
     db.attendance.filter((record) => record.userId === userId).sort((a, b) => a.date.localeCompare(b.date)),

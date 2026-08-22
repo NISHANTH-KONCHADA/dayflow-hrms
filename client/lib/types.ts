@@ -31,6 +31,7 @@ export interface User {
   location: string;
   dateOfJoining: string;
   profilePictureUrl: string | null;
+  resumeUrl: string | null;
 
   about: string;
   interests: string;
