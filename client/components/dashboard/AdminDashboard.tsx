@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import EmployeeCard from "@/components/dashboard/EmployeeCard";
 import { getTodayStatus, getUsers } from "@/lib/mock";
+import { subscribeMockEvent } from "@/lib/mock/events";
 import type { AttendanceStatus, User } from "@/lib/types";
 
 interface EmployeeWithStatus {
@@ -29,8 +30,11 @@ export default function AdminDashboard() {
     }
 
     loadEmployees();
+    const unsubscribe = subscribeMockEvent("attendance:update", loadEmployees);
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/cn";
 import UserMenu from "@/components/nav/UserMenu";
+import CheckInOutWidget from "@/components/attendance/CheckInOutWidget";
 
 export default function TopNav() {
   const { user } = useAuth();
@@ -50,7 +51,10 @@ export default function TopNav() {
           </nav>
         </div>
 
-        <UserMenu />
+        <div className="flex items-center gap-3">
+          <CheckInOutWidget />
+          <UserMenu />
+        </div>
       </div>
     </header>
   );

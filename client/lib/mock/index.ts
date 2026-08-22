@@ -1,4 +1,5 @@
 import { db, generateId } from "@/lib/mock/db";
+import { emitMockEvent } from "@/lib/mock/events";
 
 import type {
   AttendanceRecord,
@@ -112,6 +113,60 @@ export function getAttendanceForUser(userId: string): Promise<AttendanceRecord[]
 
 export function getAttendanceForDate(date: string): Promise<AttendanceRecord[]> {
   return resolveAfter(db.attendance.filter((record) => record.date === date));
+}
+
+function nowTimeString(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+function hoursBetween(start: string, end: string): number {
+  const [startHour, startMinute] = start.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);
+  const minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
+  return Math.round((minutes / 60) * 100) / 100;
+}
+
+export async function checkIn(userId: string): Promise<AttendanceRecord> {
+  const time = nowTimeString();
+  let record = db.attendance.find((candidate) => candidate.userId === userId && candidate.date === MOCK_TODAY);
+
+  if (!record) {
+    record = {
+      id: generateId("att"),
+      userId,
+      date: MOCK_TODAY,
+      checkInTime: time,
+      checkOutTime: null,
+      status: "present",
+      workHours: null,
+      extraHours: null,
+    };
+    db.attendance.push(record);
+  } else {
+    record.checkInTime = time;
+    record.checkOutTime = null;
+    record.status = "present";
+    record.workHours = null;
+    record.extraHours = null;
+  }
+
+  emitMockEvent("attendance:update");
+  return resolveAfter(record);
+}
+
+export async function checkOut(userId: string): Promise<AttendanceRecord | undefined> {
+  const record = db.attendance.find((candidate) => candidate.userId === userId && candidate.date === MOCK_TODAY);
+
+  if (record?.checkInTime) {
+    const time = nowTimeString();
+    record.checkOutTime = time;
+    record.workHours = hoursBetween(record.checkInTime, time);
+    record.extraHours = Math.round(Math.max(record.workHours - 8, 0) * 100) / 100;
+  }
+
+  emitMockEvent("attendance:update");
+  return resolveAfter(record);
 }
 
 export async function getTodayStatus(userId: string): Promise<AttendanceStatus | null> {

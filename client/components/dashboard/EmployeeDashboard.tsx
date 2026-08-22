@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import QuickAccessCard from "@/components/dashboard/QuickAccessCard";
 import { getLeaveRequestsForUser, getTodayStatus, MOCK_TODAY } from "@/lib/mock";
+import { subscribeMockEvent } from "@/lib/mock/events";
 import { getStatusMeta } from "@/lib/attendanceStatus";
 import { cn } from "@/lib/cn";
 import type { AttendanceStatus, LeaveRequest } from "@/lib/types";
@@ -32,8 +33,11 @@ export default function EmployeeDashboard() {
     }
 
     loadActivity();
+    const unsubscribe = subscribeMockEvent("attendance:update", loadActivity);
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [user]);
 
