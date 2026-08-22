@@ -196,3 +196,15 @@ export async function rejectLeaveRequest(id: string, reviewerComment?: string) {
   if (!response.ok) throw new Error(result.message || 'Failed to reject leave request');
   return result.data;
 }
+
+export async function uploadLeaveAttachment(id: string, data: { attachmentUrl: string; attachmentName?: string }) {
+  const response = await fetch(`${API_BASE_URL}/leave-requests/${id}/attachment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to upload attachment');
+  return result.data;
+}

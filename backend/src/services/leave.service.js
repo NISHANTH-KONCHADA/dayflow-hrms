@@ -739,4 +739,44 @@ export class LeaveService {
       requestedDays: Number(updatedRequest.requestedDays),
     };
   }
+
+  /**
+   * Upload or attach a document (e.g. sick leave certificate) to a leave request.
+   */
+  static async uploadLeaveAttachment({ requestingUser, id, attachmentUrl, attachmentName }) {
+    const leaveRequest = await prisma.leaveRequest.findUnique({
+      where: { id },
+      include: {
+        employee: true,
+      },
+    });
+
+    if (!leaveRequest || leaveRequest.employee.companyId !== requestingUser.companyId) {
+      throw new ApiError('Leave request not found', 404);
+    }
+
+    const isOwner = requestingUser.employeeId === leaveRequest.employeeId;
+    const isAdminOrHr = requestingUser.role === 'ADMIN' || requestingUser.role === 'HR_OFFICER';
+
+    if (!isOwner && !isAdminOrHr) {
+      throw new ApiError('Forbidden: Access denied', 403);
+    }
+
+    const updated = await prisma.leaveRequest.update({
+      where: { id },
+      data: {
+        attachmentUrl: attachmentUrl || leaveRequest.attachmentUrl,
+        attachmentName: attachmentName || leaveRequest.attachmentName,
+      },
+      include: {
+        leaveType: { select: { id: true, code: true, name: true, isPaid: true } },
+        employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true } },
+      },
+    });
+
+    return {
+      ...updated,
+      requestedDays: Number(updated.requestedDays),
+    };
+  }
 }

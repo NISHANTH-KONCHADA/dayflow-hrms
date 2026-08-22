@@ -35,6 +35,16 @@ const reviewSchema = {
   }),
 };
 
+const attachmentSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid leave request ID'),
+  }),
+  body: z.object({
+    attachmentUrl: z.string().min(1, 'Attachment URL is required'),
+    attachmentName: z.string().optional(),
+  }),
+};
+
 const getListSchema = {
   query: z.object({
     status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']).optional(),
@@ -53,6 +63,7 @@ const getListSchema = {
 // Employee personal leave request endpoints
 router.post('/', validate(createLeaveRequestSchema), LeaveController.createLeaveRequest);
 router.get('/me', validate(getListSchema), LeaveController.getPersonalLeaveRequests);
+router.post('/:id/attachment', validate(attachmentSchema), LeaveController.uploadLeaveAttachment);
 
 // Admin/HR endpoints
 router.get('/', requireRole('ADMIN', 'HR_OFFICER'), validate(getListSchema), LeaveController.getAdminLeaveRequests);

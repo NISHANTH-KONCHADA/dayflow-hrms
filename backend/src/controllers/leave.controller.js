@@ -314,4 +314,26 @@ export class LeaveController {
       next(err);
     }
   }
+
+  static async uploadLeaveAttachment(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { attachmentUrl, attachmentName } = req.body;
+
+      const result = await LeaveService.uploadLeaveAttachment({
+        requestingUser: req.user,
+        id,
+        attachmentUrl,
+        attachmentName,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Attachment updated successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
