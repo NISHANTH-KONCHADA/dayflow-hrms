@@ -1,0 +1,16 @@
+[
+  { "userId": "u1", "leaveType": "paid", "daysAvailable": 24 },
+  { "userId": "u1", "leaveType": "sick", "daysAvailable": 7 },
+
+  { "userId": "u2", "leaveType": "paid", "daysAvailable": 18 },
+  { "userId": "u2", "leaveType": "sick", "daysAvailable": 5 },
+
+  { "userId": "u3", "leaveType": "paid", "daysAvailable": 20 },
+  { "userId": "u3", "leaveType": "sick", "daysAvailable": 7 },
+
+  { "userId": "u4", "leaveType": "paid", "daysAvailable": 22 },
+  { "userId": "u4", "leaveType": "sick", "daysAvailable": 6 },
+
+  { "userId": "u5", "leaveType": "paid", "daysAvailable": 15 },
+  { "userId": "u5", "leaveType": "sick", "daysAvailable": 4 }
+]

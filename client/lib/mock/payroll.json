@@ -1,0 +1,7 @@
+[
+  { "userId": "u1", "wage": 90000, "workingDaysPerWeek": 5, "breakTimeHours": 1, "basicPct": 50, "hraPct": 50, "standardAllowance": 4167, "performanceBonusPct": 8.33, "ltaPct": 8.33, "pfEmployeePct": 12, "pfEmployerPct": 12, "professionalTax": 200 },
+  { "userId": "u2", "wage": 50000, "workingDaysPerWeek": 5, "breakTimeHours": 1, "basicPct": 50, "hraPct": 50, "standardAllowance": 4167, "performanceBonusPct": 8.33, "ltaPct": 8.33, "pfEmployeePct": 12, "pfEmployerPct": 12, "professionalTax": 200 },
+  { "userId": "u3", "wage": 55000, "workingDaysPerWeek": 5, "breakTimeHours": 1, "basicPct": 50, "hraPct": 50, "standardAllowance": 4167, "performanceBonusPct": 8.33, "ltaPct": 8.33, "pfEmployeePct": 12, "pfEmployerPct": 12, "professionalTax": 200 },
+  { "userId": "u4", "wage": 48000, "workingDaysPerWeek": 5, "breakTimeHours": 1, "basicPct": 50, "hraPct": 50, "standardAllowance": 4167, "performanceBonusPct": 8.33, "ltaPct": 8.33, "pfEmployeePct": 12, "pfEmployerPct": 12, "professionalTax": 200 },
+  { "userId": "u5", "wage": 40000, "workingDaysPerWeek": 5, "breakTimeHours": 1, "basicPct": 50, "hraPct": 50, "standardAllowance": 4167, "performanceBonusPct": 8.33, "ltaPct": 8.33, "pfEmployeePct": 12, "pfEmployerPct": 12, "professionalTax": 200 }
+]

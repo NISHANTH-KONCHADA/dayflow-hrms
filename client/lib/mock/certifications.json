@@ -1,0 +1,5 @@
+[
+  { "id": "c1", "userId": "u2", "name": "Meta Front-End Developer", "issuer": "Coursera", "issuedDate": "2023-05-10", "fileUrl": null },
+  { "id": "c2", "userId": "u3", "name": "AWS Certified Developer – Associate", "issuer": "Amazon Web Services", "issuedDate": "2024-02-18", "fileUrl": null },
+  { "id": "c3", "userId": "u4", "name": "Google UX Design Certificate", "issuer": "Google", "issuedDate": "2023-11-02", "fileUrl": null }
+]

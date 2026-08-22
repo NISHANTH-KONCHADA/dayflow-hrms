@@ -1,0 +1,31 @@
+[
+  { "id": "a1", "userId": "u2", "date": "2026-08-18", "checkInTime": "09:02", "checkOutTime": "18:10", "status": "present", "workHours": 8.13, "extraHours": 0.13 },
+  { "id": "a2", "userId": "u2", "date": "2026-08-19", "checkInTime": "09:05", "checkOutTime": "18:00", "status": "present", "workHours": 7.92, "extraHours": 0 },
+  { "id": "a3", "userId": "u2", "date": "2026-08-20", "checkInTime": null, "checkOutTime": null, "status": "leave", "workHours": null, "extraHours": null },
+  { "id": "a4", "userId": "u2", "date": "2026-08-21", "checkInTime": "09:00", "checkOutTime": "13:00", "status": "half_day", "workHours": 4, "extraHours": 0 },
+  { "id": "a5", "userId": "u2", "date": "2026-08-22", "checkInTime": "09:04", "checkOutTime": null, "status": "present", "workHours": null, "extraHours": null },
+
+  { "id": "a6", "userId": "u3", "date": "2026-08-18", "checkInTime": "09:10", "checkOutTime": "18:05", "status": "present", "workHours": 7.92, "extraHours": 0 },
+  { "id": "a7", "userId": "u3", "date": "2026-08-19", "checkInTime": "09:00", "checkOutTime": "19:00", "status": "present", "workHours": 9, "extraHours": 1 },
+  { "id": "a8", "userId": "u3", "date": "2026-08-20", "checkInTime": "09:00", "checkOutTime": "18:00", "status": "present", "workHours": 8, "extraHours": 0 },
+  { "id": "a9", "userId": "u3", "date": "2026-08-21", "checkInTime": null, "checkOutTime": null, "status": "absent", "workHours": null, "extraHours": null },
+  { "id": "a10", "userId": "u3", "date": "2026-08-22", "checkInTime": null, "checkOutTime": null, "status": "absent", "workHours": null, "extraHours": null },
+
+  { "id": "a11", "userId": "u4", "date": "2026-08-18", "checkInTime": "09:15", "checkOutTime": "18:00", "status": "present", "workHours": 7.75, "extraHours": 0 },
+  { "id": "a12", "userId": "u4", "date": "2026-08-19", "checkInTime": "09:00", "checkOutTime": "18:00", "status": "present", "workHours": 8, "extraHours": 0 },
+  { "id": "a13", "userId": "u4", "date": "2026-08-20", "checkInTime": "09:00", "checkOutTime": "18:00", "status": "present", "workHours": 8, "extraHours": 0 },
+  { "id": "a14", "userId": "u4", "date": "2026-08-21", "checkInTime": "09:00", "checkOutTime": "18:00", "status": "present", "workHours": 8, "extraHours": 0 },
+  { "id": "a15", "userId": "u4", "date": "2026-08-22", "checkInTime": "08:58", "checkOutTime": null, "status": "present", "workHours": null, "extraHours": null },
+
+  { "id": "a16", "userId": "u5", "date": "2026-08-18", "checkInTime": null, "checkOutTime": null, "status": "leave", "workHours": null, "extraHours": null },
+  { "id": "a17", "userId": "u5", "date": "2026-08-19", "checkInTime": null, "checkOutTime": null, "status": "leave", "workHours": null, "extraHours": null },
+  { "id": "a18", "userId": "u5", "date": "2026-08-20", "checkInTime": "09:20", "checkOutTime": "18:00", "status": "present", "workHours": 7.67, "extraHours": 0 },
+  { "id": "a19", "userId": "u5", "date": "2026-08-21", "checkInTime": "09:00", "checkOutTime": "18:00", "status": "present", "workHours": 8, "extraHours": 0 },
+  { "id": "a20", "userId": "u5", "date": "2026-08-22", "checkInTime": null, "checkOutTime": null, "status": "leave", "workHours": null, "extraHours": null },
+
+  { "id": "a21", "userId": "u1", "date": "2026-08-18", "checkInTime": "09:00", "checkOutTime": "18:30", "status": "present", "workHours": 8.5, "extraHours": 0.5 },
+  { "id": "a22", "userId": "u1", "date": "2026-08-19", "checkInTime": "09:00", "checkOutTime": "18:30", "status": "present", "workHours": 8.5, "extraHours": 0.5 },
+  { "id": "a23", "userId": "u1", "date": "2026-08-20", "checkInTime": "09:00", "checkOutTime": "18:30", "status": "present", "workHours": 8.5, "extraHours": 0.5 },
+  { "id": "a24", "userId": "u1", "date": "2026-08-21", "checkInTime": "09:00", "checkOutTime": "18:30", "status": "present", "workHours": 8.5, "extraHours": 0.5 },
+  { "id": "a25", "userId": "u1", "date": "2026-08-22", "checkInTime": "09:01", "checkOutTime": null, "status": "present", "workHours": null, "extraHours": null }
+]
