@@ -514,30 +514,36 @@ export class EmployeeService {
   }
 
   /**
-   * Get single employee by ID
+   * Get single employee by ID with full relations, leave balances, live status, and privacy safeguards
    */
   static async getEmployeeById({ companyId, requestingUser, employeeId }) {
+    const today = EmployeeService.getTodayDateOnly();
+
     const employee = await prisma.employee.findFirst({
       where: { id: employeeId, companyId },
       include: {
         user: {
-          select: { id: true, email: true, role: true, isActive: true, mustChangePassword: true },
+          select: { id: true, email: true, role: true, isActive: true, mustChangePassword: true, lastLoginAt: true },
         },
         department: true,
         jobPosition: true,
         manager: {
-          select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true, personalEmail: true },
+          select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true, personalEmail: true, profilePictureUrl: true },
         },
         directReports: {
-          select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true, profilePictureUrl: true },
+          select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true, profilePictureUrl: true, jobPosition: { select: { id: true, name: true } } },
         },
         bankDetails: true,
         workingSchedule: true,
         skills: {
           include: { skill: true },
         },
-        certifications: true,
-        documents: true,
+        certifications: {
+          orderBy: { issuedAt: 'desc' },
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' },
+        },
         salaryStructure: {
           include: {
             components: {
@@ -549,6 +555,24 @@ export class EmployeeService {
           where: { year: new Date().getFullYear() },
           include: { leaveType: true },
         },
+        attendances: {
+          where: { workDate: today },
+          select: { id: true, checkIn: true, checkOut: true, status: true, workMinutes: true, breakMinutes: true },
+        },
+        leaveRequests: {
+          where: {
+            status: 'APPROVED',
+            startDate: { lte: today },
+            endDate: { gte: today },
+          },
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            requestedDays: true,
+            leaveType: { select: { id: true, name: true, code: true } },
+          },
+        },
       },
     });
 
@@ -556,22 +580,65 @@ export class EmployeeService {
       throw new ApiError('Employee not found', 404);
     }
 
+    // Determine live status
+    let liveStatus = 'absent';
+    let statusDetail = 'Absent (not checked in)';
+    let todayAttendance = null;
+    let todayLeave = null;
+
+    if (employee.attendances && employee.attendances.length > 0 && employee.attendances[0].checkIn) {
+      liveStatus = 'present';
+      todayAttendance = employee.attendances[0];
+      statusDetail = employee.attendances[0].checkOut ? 'Completed workday' : 'Currently checked in';
+    } else if (employee.leaveRequests && employee.leaveRequests.length > 0) {
+      liveStatus = 'leave';
+      todayLeave = employee.leaveRequests[0];
+      statusDetail = `On ${employee.leaveRequests[0].leaveType.name}`;
+    }
+
+    const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(' ');
+
+    // Calculate remaining days for leave allocations
+    const leaveAllocationsWithRemaining = (employee.leaveAllocations || []).map((la) => {
+      const alloc = Number(la.allocatedDays) || 0;
+      const used = Number(la.usedDays) || 0;
+      return {
+        ...la,
+        remainingDays: Math.max(0, alloc - used),
+      };
+    });
+
     const isOwner = requestingUser.employeeId === employee.id || requestingUser.userId === employee.user?.id;
     const isAdminOrHr = requestingUser.role === 'ADMIN' || requestingUser.role === 'HR_OFFICER';
 
+    const { attendances, leaveRequests, ...baseEmployee } = employee;
+
+    const populated = {
+      ...baseEmployee,
+      fullName,
+      email: employee.user?.email || employee.personalEmail,
+      role: employee.user?.role || 'EMPLOYEE',
+      status: liveStatus,
+      statusDetail,
+      todayAttendance,
+      todayLeave,
+      leaveAllocations: leaveAllocationsWithRemaining,
+    };
+
+    // Redact private fields for peer employees
     if (!isOwner && !isAdminOrHr) {
-      const sanitized = {
-        ...employee,
+      return {
+        ...populated,
         panNumber: undefined,
         uanNumber: undefined,
         bankDetails: null,
         salaryStructure: null,
         dateOfBirth: undefined,
+        address: undefined,
       };
-      return sanitized;
     }
 
-    return employee;
+    return populated;
   }
 
   /**
