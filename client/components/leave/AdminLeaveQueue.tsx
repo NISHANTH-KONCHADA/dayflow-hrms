@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getAllLeaveRequests, getUsers, reviewLeaveRequest } from "@/lib/mock";
 import { subscribeMockEvent } from "@/lib/mock/events";
+import TextField from "@/components/ui/TextField";
 import { cn } from "@/lib/cn";
 import type { LeaveRequest, User } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export default function AdminLeaveQueue() {
   const { user: viewer } = useAuth();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [search, setSearch] = useState("");
   const [comments, setComments] = useState<Record<string, string>>({});
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,86 +62,112 @@ export default function AdminLeaveQueue() {
     setPendingAction(null);
   }
 
+  const filteredRequests = requests.filter((request) =>
+    userName(request.userId).toLowerCase().includes(search.trim().toLowerCase()),
+  );
+
   if (loading) return <p className="text-sm text-muted">Loading requests…</p>;
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold text-foreground">Time Off — Approvals</h1>
 
-      {requests.length === 0 ? (
-        <p className="text-sm text-muted">No time off requests yet.</p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {requests.map((request) => {
-            const isPending = request.status === "pending";
-            const isBusy = pendingAction?.startsWith(request.id);
+      <TextField
+        label="Search Employees"
+        name="search"
+        placeholder="Search by name…"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        className="max-w-xs"
+      />
 
-            return (
-              <div key={request.id} className="rounded-lg border border-border bg-surface p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{userName(request.userId)}</p>
-                    <p className="text-xs capitalize text-muted">
-                      {request.leaveType} leave · {request.startDate}
-                      {request.startDate !== request.endDate ? ` to ${request.endDate}` : ""}
-                    </p>
-                    {request.remarks && <p className="mt-1 text-xs text-muted">&quot;{request.remarks}&quot;</p>}
-                    {request.attachmentUrl && (
-                      <a
-                        href={request.attachmentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 inline-block text-xs text-primary hover:underline"
-                      >
-                        View attachment
-                      </a>
-                    )}
-                  </div>
-                  <span className={cn("text-xs font-medium capitalize", statusClassName(request.status))}>
-                    {request.status}
-                  </span>
-                </div>
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        {filteredRequests.length === 0 ? (
+          <p className="p-4 text-sm text-muted">No time off requests match.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted">
+                <th className="px-4 py-2 font-medium">Name</th>
+                <th className="px-4 py-2 font-medium">Start Date</th>
+                <th className="px-4 py-2 font-medium">End Date</th>
+                <th className="px-4 py-2 font-medium">Time Off Type</th>
+                <th className="px-4 py-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRequests.map((request) => {
+                const isPending = request.status === "pending";
+                const isBusy = pendingAction?.startsWith(request.id);
 
-                {isPending ? (
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <input
-                      type="text"
-                      placeholder="Optional comment…"
-                      value={comments[request.id] ?? ""}
-                      onChange={(event) =>
-                        setComments((prev) => ({ ...prev, [request.id]: event.target.value }))
-                      }
-                      className="flex-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleDecision(request.id, "rejected")}
-                        disabled={isBusy}
-                        className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-status-danger hover:bg-status-danger/10 disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDecision(request.id, "approved")}
-                        disabled={isBusy}
-                        className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
-                      >
-                        Approve
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  request.reviewerComment && (
-                    <p className="mt-2 text-xs text-muted">Reviewer: &quot;{request.reviewerComment}&quot;</p>
-                  )
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                return (
+                  <tr key={request.id} className="border-b border-border align-top last:border-0">
+                    <td className="px-4 py-2 text-foreground">{userName(request.userId)}</td>
+                    <td className="px-4 py-2 text-foreground">{request.startDate}</td>
+                    <td className="px-4 py-2 text-foreground">{request.endDate}</td>
+                    <td className="px-4 py-2">
+                      <span className="capitalize text-foreground">{request.leaveType}</span>
+                      {request.remarks && <p className="mt-0.5 text-xs text-muted">&quot;{request.remarks}&quot;</p>}
+                      {request.attachmentUrl && (
+                        <a
+                          href={request.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-0.5 block text-xs text-primary hover:underline"
+                        >
+                          View attachment
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      {isPending ? (
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type="text"
+                            placeholder="Optional comment…"
+                            value={comments[request.id] ?? ""}
+                            onChange={(event) =>
+                              setComments((prev) => ({ ...prev, [request.id]: event.target.value }))
+                            }
+                            className="w-full max-w-[180px] rounded-md border border-border bg-surface px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDecision(request.id, "rejected")}
+                              disabled={isBusy}
+                              className="rounded-md border border-border px-2 py-1 text-xs font-medium text-status-danger hover:bg-status-danger/10 disabled:opacity-60"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDecision(request.id, "approved")}
+                              disabled={isBusy}
+                              className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+                            >
+                              Approve
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className={cn("text-xs font-medium capitalize", statusClassName(request.status))}>
+                            {request.status}
+                          </span>
+                          {request.reviewerComment && (
+                            <p className="mt-0.5 text-xs text-muted">&quot;{request.reviewerComment}&quot;</p>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

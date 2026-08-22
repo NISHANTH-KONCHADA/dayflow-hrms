@@ -5,7 +5,7 @@
  * check-in, approval, or wage edit elsewhere updates it without a manual
  * refetch.
  */
-type MockEventName = "attendance:update" | "leave:update" | "payroll:update";
+type MockEventName = "attendance:update" | "leave:update" | "payroll:update" | "users:update";
 
 const bus = typeof window !== "undefined" ? new EventTarget() : null;
 

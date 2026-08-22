@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import EmployeeCard from "@/components/dashboard/EmployeeCard";
+import Button from "@/components/ui/Button";
 import { getTodayStatus, getUsers } from "@/lib/mock";
 import { subscribeMockEvent } from "@/lib/mock/events";
 import type { AttendanceStatus, User } from "@/lib/types";
@@ -30,11 +32,13 @@ export default function AdminDashboard() {
     }
 
     loadEmployees();
-    const unsubscribe = subscribeMockEvent("attendance:update", loadEmployees);
+    const unsubscribeAttendance = subscribeMockEvent("attendance:update", loadEmployees);
+    const unsubscribeUsers = subscribeMockEvent("users:update", loadEmployees);
 
     return () => {
       cancelled = true;
-      unsubscribe();
+      unsubscribeAttendance();
+      unsubscribeUsers();
     };
   }, []);
 
@@ -44,13 +48,18 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold text-foreground">Employees</h1>
-        <p className="text-sm text-muted">
-          {loading
-            ? "Loading today's attendance…"
-            : `${presentCount} present · ${leaveCount} on leave · ${absentCount} absent today`}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-lg font-semibold text-foreground">Employees</h1>
+          <p className="text-sm text-muted">
+            {loading
+              ? "Loading today's attendance…"
+              : `${presentCount} present · ${leaveCount} on leave · ${absentCount} absent today`}
+          </p>
+        </div>
+        <Link href="/employees/new">
+          <Button type="button">+ New Employee</Button>
+        </Link>
       </div>
 
       {loading ? (

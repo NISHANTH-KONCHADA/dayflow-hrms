@@ -34,6 +34,15 @@ export const db = {
   leaveBalances: structuredClone(leaveBalancesData) as LeaveBalance[],
   leaveRequests: structuredClone(leaveRequestsData) as LeaveRequest[],
   payroll: structuredClone(payrollData) as SalaryStructure[],
+  /**
+   * Mock credential store, keyed by user id — a stand-in for server-side
+   * password hashes. Every seed account shares the same demo password;
+   * accounts created via the admin "New Employee" form get their own
+   * generated temp password here.
+   */
+  credentials: Object.fromEntries(
+    (structuredClone(usersData) as User[]).map((user) => [user.id, "Password@123"]),
+  ) as Record<string, string>,
 };
 
 /** Cheap unique id for records created by mock write operations. */

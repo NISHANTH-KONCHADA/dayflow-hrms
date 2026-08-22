@@ -1,5 +1,6 @@
 import { db, generateId } from "@/lib/mock/db";
 import { emitMockEvent } from "@/lib/mock/events";
+import { generateTempPassword, setCredential } from "@/lib/mock/auth";
 
 import type {
   AttendanceRecord,
@@ -10,6 +11,7 @@ import type {
   LeaveRequest,
   LeaveRequestStatus,
   LeaveType,
+  Role,
   SalaryBreakdown,
   SalaryStructure,
   Skill,
@@ -39,6 +41,109 @@ export function getUsers(): Promise<User[]> {
 
 export function getUserById(userId: string): Promise<User | undefined> {
   return resolveAfter(db.users.find((user) => user.id === userId));
+}
+
+const COMPANY_CODE = "DF";
+
+/**
+ * `[company code][first 2 letters of first name][first 2 letters of last name][join year][4-digit serial]`
+ * e.g. DFJODO20220001. Serial is the count of employees already joined that year, so it
+ * effectively resets per year.
+ */
+function generateLoginId(firstName: string, lastName: string, dateOfJoining: string): string {
+  const year = new Date(dateOfJoining).getFullYear();
+  const nameCode = `${(firstName.slice(0, 2) || "XX").toUpperCase()}${(lastName.slice(0, 2) || "XX").toUpperCase()}`;
+  const serial = db.users.filter((user) => new Date(user.dateOfJoining).getFullYear() === year).length + 1;
+  return `${COMPANY_CODE}${nameCode}${year}${String(serial).padStart(4, "0")}`;
+}
+
+export interface CreateEmployeeInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: Role;
+  department: string;
+  jobPosition: string;
+  managerId: string | null;
+  company: string;
+  location: string;
+  dateOfJoining: string;
+}
+
+export interface CreateEmployeeResult {
+  user: User;
+  tempPassword: string;
+}
+
+/**
+ * Employees never self-register (see docs/IMPLEMENTATION_PLAN.md #0) — an
+ * Admin/HR user creates the account here, the system generates the Login ID
+ * and a temp password, and the new user is forced through /reset-password
+ * on their first sign-in.
+ */
+export async function createEmployee(
+  input: CreateEmployeeInput,
+): Promise<CreateEmployeeResult | { error: string }> {
+  const normalizedEmail = input.email.trim().toLowerCase();
+  if (db.users.some((user) => user.email.toLowerCase() === normalizedEmail)) {
+    return resolveAfter({ error: "An account with this email already exists." });
+  }
+
+  const id = generateId("u");
+  const loginId = generateLoginId(input.firstName, input.lastName, input.dateOfJoining);
+  const tempPassword = generateTempPassword();
+  const manager = input.managerId ? db.users.find((user) => user.id === input.managerId) : undefined;
+
+  const user: User = {
+    id,
+    loginId,
+    email: input.email.trim(),
+    role: input.role,
+    mustResetPassword: true,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    phone: "",
+    personalEmail: "",
+    dob: "",
+    gender: "",
+    maritalStatus: "",
+    nationality: "",
+    address: "",
+    department: input.department,
+    jobPosition: input.jobPosition,
+    managerId: input.managerId,
+    managerName: manager ? `${manager.firstName} ${manager.lastName}` : null,
+    company: input.company,
+    location: input.location,
+    dateOfJoining: input.dateOfJoining,
+    profilePictureUrl: null,
+    resumeUrl: null,
+    about: "",
+    interests: "",
+  };
+
+  db.users.push(user);
+  db.privateInfo.push({ userId: id, panNo: "", uanNo: "", bankAccountNo: "", bankName: "", ifscCode: "" });
+  db.leaveBalances.push(
+    { userId: id, leaveType: "paid", daysAvailable: 24 },
+    { userId: id, leaveType: "sick", daysAvailable: 7 },
+  );
+  db.payroll.push({
+    userId: id,
+    wage: 0,
+    basicPct: 50,
+    hraPct: 50,
+    standardAllowance: 4167,
+    performanceBonusPct: 8.33,
+    ltaPct: 8.33,
+    pfEmployeePct: 12,
+    pfEmployerPct: 12,
+    professionalTax: 200,
+  });
+  setCredential(id, tempPassword);
+
+  emitMockEvent("users:update");
+  return resolveAfter({ user, tempPassword });
 }
 
 export function getPrivateInfo(userId: string): Promise<EmployeePrivateInfo | undefined> {

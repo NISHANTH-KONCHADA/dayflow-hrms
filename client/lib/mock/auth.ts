@@ -3,7 +3,7 @@ import type { User } from "@/lib/types";
 
 const SESSION_KEY = "dayflow_session_user_id";
 
-/** Every seeded account shares this password — there's no real credential store yet. */
+/** Shown as a hint on the sign-in page — matches the seed accounts' shared password in db.ts. */
 export const MOCK_PASSWORD = "Password@123";
 
 function resolveAfter<T>(value: T, delayMs = 300): Promise<T> {
@@ -35,7 +35,7 @@ export async function login(
       candidate.email.toLowerCase() === normalized || candidate.loginId.toLowerCase() === normalized,
   );
 
-  if (!user || password !== MOCK_PASSWORD) {
+  if (!user || db.credentials[user.id] !== password) {
     return resolveAfter({ error: "Invalid Login ID/email or password." });
   }
 
@@ -43,10 +43,21 @@ export async function login(
   return resolveAfter({ user });
 }
 
-export async function completePasswordReset(userId: string): Promise<User | undefined> {
+export async function completePasswordReset(userId: string, newPassword: string): Promise<User | undefined> {
   const user = db.users.find((candidate) => candidate.id === userId);
   if (user) {
     user.mustResetPassword = false;
+    db.credentials[userId] = newPassword;
   }
   return resolveAfter(user);
+}
+
+export function setCredential(userId: string, password: string): void {
+  db.credentials[userId] = password;
+}
+
+/** Readable temp password for newly-created accounts — satisfies the strength validator. */
+export function generateTempPassword(): string {
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `Welcome${digits}!`;
 }
