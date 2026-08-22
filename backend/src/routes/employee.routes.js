@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { EmployeeController } from '../controllers/employee.controller.js';
+import { SkillController } from '../controllers/skill.controller.js';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -132,10 +133,67 @@ const getByIdSchema = {
   }),
 };
 
+const assignMeSkillSchema = {
+  body: z
+    .object({
+      skillId: z.string().uuid('Invalid skill ID').optional(),
+      name: z.string().min(1).optional(),
+    })
+    .refine((data) => data.skillId || data.name, {
+      message: 'Either skillId or name is required',
+    }),
+};
+
+const removeMeSkillSchema = {
+  params: z.object({
+    skillId: z.string().uuid('Invalid skill ID'),
+  }),
+};
+
+const assignEmployeeSkillSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+  }),
+  body: z
+    .object({
+      skillId: z.string().uuid('Invalid skill ID').optional(),
+      name: z.string().min(1).optional(),
+    })
+    .refine((data) => data.skillId || data.name, {
+      message: 'Either skillId or name is required',
+    }),
+};
+
+const removeEmployeeSkillSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+    skillId: z.string().uuid('Invalid skill ID'),
+  }),
+};
+
 // Current Employee Profile (/me)
 router.get('/me', EmployeeController.getCurrentProfile);
 router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
 router.put('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
+
+// Current Employee Skills (/me/skills)
+router.get('/me/skills', (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return SkillController.getEmployeeSkills(req, res, next);
+});
+router.post('/me/skills', validate(assignMeSkillSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return SkillController.assignSkill(req, res, next);
+});
+router.delete('/me/skills/:skillId', validate(removeMeSkillSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return SkillController.removeSkill(req, res, next);
+});
+
+// Employee Skills (/:id/skills)
+router.get('/:id/skills', validate(getByIdSchema), SkillController.getEmployeeSkills);
+router.post('/:id/skills', validate(assignEmployeeSkillSchema), SkillController.assignSkill);
+router.delete('/:id/skills/:skillId', validate(removeEmployeeSkillSchema), SkillController.removeSkill);
 
 // Employee CRUD (/ and /:id)
 router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);

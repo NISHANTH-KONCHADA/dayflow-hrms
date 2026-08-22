@@ -70,4 +70,77 @@ export class SkillController {
       next(err);
     }
   }
+
+  /**
+   * GET /api/employees/:id/skills
+   * List skills of an employee
+   */
+  static async getEmployeeSkills(req, res, next) {
+    try {
+      const { id } = req.params;
+      const skills = await SkillService.getEmployeeSkills({
+        companyId: req.user.companyId,
+        employeeId: id,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Employee skills retrieved successfully',
+        data: skills,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/employees/:id/skills
+   * Assign a skill to an employee
+   */
+  static async assignSkill(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { skillId, name } = req.body;
+
+      const result = await SkillService.assignSkillToEmployee({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: id,
+        skillId,
+        name,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 201,
+        message: result.message,
+        data: result.skill,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/employees/:id/skills/:skillId
+   * Remove a skill from an employee
+   */
+  static async removeSkill(req, res, next) {
+    try {
+      const { id, skillId } = req.params;
+      const result = await SkillService.removeSkillFromEmployee({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: id,
+        skillId,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: result.message,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
