@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { EmployeeController } from '../controllers/employee.controller.js';
 import { AttendanceController } from '../controllers/attendance.controller.js';
+import { LeaveController } from '../controllers/leave.controller.js';
 import { authenticateToken, requireRole, requireSameUserOrAdmin } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -112,6 +113,33 @@ const updateWorkingScheduleSchema = {
     effectiveFrom: z.string().optional(),
   }),
 };
+
+const createAllocationSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+  }),
+  body: z.object({
+    leaveTypeId: z.string().uuid('Invalid leave type ID'),
+    year: z.number().int().optional(),
+    allocatedDays: z.number().nonnegative('Allocated days must be a non-negative number'),
+  }),
+};
+
+const updateAllocationSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+    allocationId: z.string().uuid('Invalid allocation ID'),
+  }),
+  body: z.object({
+    allocatedDays: z.number().nonnegative().optional(),
+    usedDays: z.number().nonnegative().optional(),
+  }),
+};
+
+// Employee leave allocation endpoints
+router.get('/:id/leave-allocations', requireSameUserOrAdmin(), validate(getByIdSchema), LeaveController.getEmployeeAllocations);
+router.post('/:id/leave-allocations', requireRole('ADMIN', 'HR_OFFICER'), validate(createAllocationSchema), LeaveController.createEmployeeAllocation);
+router.patch('/:id/leave-allocations/:allocationId', requireRole('ADMIN', 'HR_OFFICER'), validate(updateAllocationSchema), LeaveController.updateEmployeeAllocation);
 
 // Employee working schedule endpoints
 router.get('/:id/working-schedule', requireSameUserOrAdmin(), validate(getByIdSchema), AttendanceController.getWorkingSchedule);

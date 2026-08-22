@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.routes.js';
 import employeeRoutes from './routes/employee.routes.js';
 import companyRoutes from './routes/company.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
+import leaveTypeRoutes from './routes/leaveType.routes.js';
+import leaveAllocationRoutes from './routes/leaveAllocation.routes.js';
 import { errorHandler } from './utils/errorHandler.js';
 
 const app = express();
@@ -36,6 +38,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/leave-types', leaveTypeRoutes);
+app.use('/api/leave-allocations', leaveAllocationRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
