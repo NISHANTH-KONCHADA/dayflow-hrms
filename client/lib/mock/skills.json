@@ -1,0 +1,11 @@
+[
+  { "id": "sk1", "userId": "u2", "name": "React" },
+  { "id": "sk2", "userId": "u2", "name": "TypeScript" },
+  { "id": "sk3", "userId": "u2", "name": "Tailwind CSS" },
+  { "id": "sk4", "userId": "u3", "name": "Node.js" },
+  { "id": "sk5", "userId": "u3", "name": "PostgreSQL" },
+  { "id": "sk6", "userId": "u4", "name": "Figma" },
+  { "id": "sk7", "userId": "u4", "name": "User Research" },
+  { "id": "sk8", "userId": "u5", "name": "Negotiation" },
+  { "id": "sk9", "userId": "u5", "name": "CRM Tools" }
+]

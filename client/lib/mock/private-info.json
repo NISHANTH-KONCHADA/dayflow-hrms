@@ -1,0 +1,7 @@
+[
+  { "userId": "u1", "panNo": "ABCDE1234F", "uanNo": "100200300400", "bankAccountNo": "000111222333", "bankName": "HDFC Bank", "ifscCode": "HDFC0001234" },
+  { "userId": "u2", "panNo": "PQRST5678G", "uanNo": "100200300401", "bankAccountNo": "000111222334", "bankName": "ICICI Bank", "ifscCode": "ICIC0005678" },
+  { "userId": "u3", "panNo": "LMNOP9012H", "uanNo": "100200300402", "bankAccountNo": "000111222335", "bankName": "Axis Bank", "ifscCode": "UTIB0009012" },
+  { "userId": "u4", "panNo": "WXYZA3456I", "uanNo": "100200300403", "bankAccountNo": "000111222336", "bankName": "SBI", "ifscCode": "SBIN0003456" },
+  { "userId": "u5", "panNo": "BCDEF7890J", "uanNo": "100200300404", "bankAccountNo": "000111222337", "bankName": "Kotak Mahindra Bank", "ifscCode": "KKBK0007890" }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "l1",
+    "userId": "u2",
+    "leaveType": "paid",
+    "startDate": "2026-08-20",
+    "endDate": "2026-08-20",
+    "remarks": "Family function",
+    "attachmentUrl": null,
+    "status": "approved",
+    "reviewerComment": "Approved, enjoy.",
+    "reviewedBy": "u1",
+    "createdAt": "2026-08-14T10:12:00.000Z"
+  },
+  {
+    "id": "l2",
+    "userId": "u5",
+    "leaveType": "sick",
+    "startDate": "2026-08-18",
+    "endDate": "2026-08-19",
+    "remarks": "Fever, resting at home",
+    "attachmentUrl": "/mock/attachments/sick-note-u5.pdf",
+    "status": "approved",
+    "reviewerComment": "Get well soon.",
+    "reviewedBy": "u1",
+    "createdAt": "2026-08-17T08:45:00.000Z"
+  },
+  {
+    "id": "l3",
+    "userId": "u5",
+    "leaveType": "paid",
+    "startDate": "2026-08-22",
+    "endDate": "2026-08-22",
+    "remarks": "Personal work",
+    "attachmentUrl": null,
+    "status": "pending",
+    "reviewerComment": null,
+    "reviewedBy": null,
+    "createdAt": "2026-08-21T09:30:00.000Z"
+  },
+  {
+    "id": "l4",
+    "userId": "u3",
+    "leaveType": "unpaid",
+    "startDate": "2026-08-25",
+    "endDate": "2026-08-26",
+    "remarks": "Moving apartments",
+    "attachmentUrl": null,
+    "status": "pending",
+    "reviewerComment": null,
+    "reviewedBy": null,
+    "createdAt": "2026-08-21T14:05:00.000Z"
+  },
+  {
+    "id": "l5",
+    "userId": "u4",
+    "leaveType": "sick",
+    "startDate": "2026-08-10",
+    "endDate": "2026-08-10",
+    "remarks": "Dental appointment",
+    "attachmentUrl": null,
+    "status": "rejected",
+    "reviewerComment": "Please apply as half-day instead next time.",
+    "reviewedBy": "u1",
+    "createdAt": "2026-08-08T11:00:00.000Z"
+  }
+]
