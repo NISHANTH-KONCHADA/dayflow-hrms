@@ -445,4 +445,99 @@ export class AttendanceService {
       totalExtraHours: Math.round((totalExtraMinutes / 60) * 100) / 100,
     };
   }
+
+  /**
+   * Get employee working schedule.
+   */
+  static async getWorkingSchedule({ companyId, targetEmployeeId }) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: targetEmployeeId, companyId },
+    });
+
+    if (!employee) {
+      throw new ApiError('Employee not found in company', 404);
+    }
+
+    const schedule = await prisma.workingSchedule.findUnique({
+      where: { employeeId: targetEmployeeId },
+    });
+
+    if (!schedule) {
+      return {
+        employeeId: targetEmployeeId,
+        name: 'Standard 5-Day Schedule',
+        workingDays: 5,
+        startTime: '09:00',
+        endTime: '18:00',
+        breakMinutes: 60,
+        weeklyHours: 40.0,
+        effectiveFrom: null,
+      };
+    }
+
+    return schedule;
+  }
+
+  /**
+   * Update or create employee working schedule.
+   */
+  static async updateWorkingSchedule({ companyId, targetEmployeeId, updateData }) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: targetEmployeeId, companyId },
+    });
+
+    if (!employee) {
+      throw new ApiError('Employee not found in company', 404);
+    }
+
+    const existingSchedule = await prisma.workingSchedule.findUnique({
+      where: { employeeId: targetEmployeeId },
+    });
+
+    const workingDays = updateData.workingDays ?? existingSchedule?.workingDays ?? 5;
+    const startTime = updateData.startTime ?? existingSchedule?.startTime ?? '09:00';
+    const endTime = updateData.endTime ?? existingSchedule?.endTime ?? '18:00';
+    const breakMinutes = updateData.breakMinutes ?? existingSchedule?.breakMinutes ?? 60;
+    const name = updateData.name ?? existingSchedule?.name ?? 'Standard 5-Day Schedule';
+
+    // Calculate weeklyHours
+    let weeklyHours = updateData.weeklyHours;
+    if (weeklyHours === undefined || weeklyHours === null) {
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      const grossMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+      const netDailyMinutes = Math.max(0, grossMinutes - breakMinutes);
+      weeklyHours = Math.round(((netDailyMinutes / 60) * workingDays) * 100) / 100;
+    }
+
+    const effectiveFrom = updateData.effectiveFrom
+      ? new Date(updateData.effectiveFrom)
+      : (existingSchedule?.effectiveFrom ?? new Date());
+
+    const upsertedSchedule = await prisma.workingSchedule.upsert({
+      where: { employeeId: targetEmployeeId },
+      update: {
+        name,
+        workingDays,
+        startTime,
+        endTime,
+        breakMinutes,
+        weeklyHours,
+        effectiveFrom,
+      },
+      create: {
+        companyId,
+        employeeId: targetEmployeeId,
+        name,
+        workingDays,
+        startTime,
+        endTime,
+        breakMinutes,
+        weeklyHours,
+        effectiveFrom,
+      },
+    });
+
+    return upsertedSchedule;
+  }
 }

@@ -98,6 +98,25 @@ const getByIdSchema = {
   }),
 };
 
+const updateWorkingScheduleSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+  }),
+  body: z.object({
+    name: z.string().optional(),
+    workingDays: z.number().int().min(1).max(7).optional(),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format HH:mm').optional(),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format HH:mm').optional(),
+    breakMinutes: z.number().int().min(0).optional(),
+    weeklyHours: z.number().optional(),
+    effectiveFrom: z.string().optional(),
+  }),
+};
+
+// Employee working schedule endpoints
+router.get('/:id/working-schedule', requireSameUserOrAdmin(), validate(getByIdSchema), AttendanceController.getWorkingSchedule);
+router.patch('/:id/working-schedule', requireRole('ADMIN', 'HR_OFFICER'), validate(updateWorkingScheduleSchema), AttendanceController.updateWorkingSchedule);
+
 // Employee attendance endpoints
 router.get('/:id/attendance', requireSameUserOrAdmin(), validate(getByIdSchema), AttendanceController.getEmployeeAttendance);
 router.get('/:id/attendance/summary', requireSameUserOrAdmin(), validate(getByIdSchema), AttendanceController.getEmployeeSummary);

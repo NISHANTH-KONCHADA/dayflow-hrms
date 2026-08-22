@@ -153,4 +153,40 @@ export class AttendanceController {
       next(err);
     }
   }
+
+  static async getWorkingSchedule(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await AttendanceService.getWorkingSchedule({
+        companyId: req.user.companyId,
+        targetEmployeeId: id,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async updateWorkingSchedule(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await AttendanceService.updateWorkingSchedule({
+        companyId: req.user.companyId,
+        targetEmployeeId: id,
+        updateData: req.body,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Working schedule updated successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

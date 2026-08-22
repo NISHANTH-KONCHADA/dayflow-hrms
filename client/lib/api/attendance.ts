@@ -100,3 +100,24 @@ export async function getEmployeeSummary(
   if (!response.ok) throw new Error(result.message || 'Failed to fetch employee summary');
   return result.data;
 }
+
+export async function getWorkingSchedule(employeeId: string) {
+  const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/working-schedule`, {
+    credentials: 'include',
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch working schedule');
+  return result.data;
+}
+
+export async function updateWorkingSchedule(employeeId: string, data: Record<string, any>) {
+  const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/working-schedule`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to update working schedule');
+  return result.data;
+}
