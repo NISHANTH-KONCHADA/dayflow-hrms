@@ -9,8 +9,13 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+    if (!user) {
       router.replace("/sign-in");
+      return;
+    }
+    if (user.mustResetPassword) {
+      router.replace("/reset-password");
     }
   }, [loading, user, router]);
 
@@ -22,7 +27,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) return null;
+  if (!user || user.mustResetPassword) return null;
 
   return <>{children}</>;
 }
