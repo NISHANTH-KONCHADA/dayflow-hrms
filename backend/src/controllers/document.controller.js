@@ -72,4 +72,67 @@ export class DocumentController {
       next(err);
     }
   }
+
+  /**
+   * GET /api/employees/me/resume
+   */
+  static async getResume(req, res, next) {
+    try {
+      const resume = await DocumentService.getCurrentResume({
+        companyId: req.user.companyId,
+        employeeId: req.user.employeeId,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: resume ? 'Resume retrieved successfully' : 'No resume uploaded',
+        data: resume,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/employees/me/resume
+   */
+  static async uploadResume(req, res, next) {
+    try {
+      const resume = await DocumentService.uploadResume({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: req.user.employeeId,
+        data: req.body,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Resume uploaded successfully',
+        data: resume,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/employees/me/resume
+   */
+  static async deleteResume(req, res, next) {
+    try {
+      const result = await DocumentService.deleteCurrentResume({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: req.user.employeeId,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: result.message,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

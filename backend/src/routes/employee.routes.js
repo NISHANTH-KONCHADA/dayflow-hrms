@@ -261,10 +261,24 @@ const deleteEmpDocSchema = {
   }),
 };
 
+const uploadResumeSchema = {
+  body: z.object({
+    fileUrl: z.string().min(1, 'Resume file URL is required'),
+    name: z.string().optional(),
+    mimeType: z.string().optional(),
+    sizeBytes: z.number().int().nonnegative().optional(),
+  }),
+};
+
 // Current Employee Profile (/me)
 router.get('/me', EmployeeController.getCurrentProfile);
 router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
 router.put('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
+
+// Current Employee Resume (/me/resume)
+router.get('/me/resume', DocumentController.getResume);
+router.post('/me/resume', validate(uploadResumeSchema), DocumentController.uploadResume);
+router.delete('/me/resume', DocumentController.deleteResume);
 
 // Current Employee Skills (/me/skills)
 router.get('/me/skills', (req, res, next) => {

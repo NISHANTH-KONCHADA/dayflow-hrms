@@ -134,4 +134,94 @@ export class DocumentService {
       documentId,
     };
   }
+
+  /**
+   * Get active resume for an employee
+   */
+  static async getCurrentResume({ companyId, employeeId }) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: employeeId, companyId },
+    });
+
+    if (!employee) {
+      throw new ApiError('Employee not found', 404);
+    }
+
+    const resume = await prisma.employeeDocument.findFirst({
+      where: { employeeId, type: 'RESUME' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return DocumentService.formatDocument(resume);
+  }
+
+  /**
+   * Upload / Update active resume for an employee
+   */
+  static async uploadResume({ companyId, requestingUser, employeeId, data }) {
+    const { isOwner, isAdminOrHr, employee } = await DocumentService.checkEmployeeAccess({
+      companyId,
+      requestingUser,
+      employeeId,
+    });
+
+    if (!isOwner && !isAdminOrHr) {
+      throw new ApiError('Forbidden: You cannot upload a resume for this employee', 403);
+    }
+
+    const { fileUrl, name, mimeType = 'application/pdf', sizeBytes } = data;
+
+    if (!fileUrl || !fileUrl.trim()) {
+      throw new ApiError('Resume fileUrl is required', 400);
+    }
+
+    const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(' ');
+    const resumeName = name && name.trim() ? name.trim() : `Resume - ${fullName || 'Employee'}.pdf`;
+
+    // Remove older resumes if replacing
+    await prisma.employeeDocument.deleteMany({
+      where: { employeeId, type: 'RESUME' },
+    });
+
+    const resume = await prisma.employeeDocument.create({
+      data: {
+        employeeId,
+        type: 'RESUME',
+        name: resumeName,
+        fileUrl: fileUrl.trim(),
+        mimeType: mimeType.trim(),
+        sizeBytes: sizeBytes !== undefined && sizeBytes !== null ? BigInt(sizeBytes) : null,
+      },
+    });
+
+    return DocumentService.formatDocument(resume);
+  }
+
+  /**
+   * Delete active resume for an employee
+   */
+  static async deleteCurrentResume({ companyId, requestingUser, employeeId }) {
+    const { isOwner, isAdminOrHr } = await DocumentService.checkEmployeeAccess({
+      companyId,
+      requestingUser,
+      employeeId,
+    });
+
+    if (!isOwner && !isAdminOrHr) {
+      throw new ApiError('Forbidden: You cannot delete the resume for this employee', 403);
+    }
+
+    const deleted = await prisma.employeeDocument.deleteMany({
+      where: { employeeId, type: 'RESUME' },
+    });
+
+    if (deleted.count === 0) {
+      throw new ApiError('No resume found for this employee', 404);
+    }
+
+    return {
+      message: 'Resume deleted successfully',
+      deletedCount: deleted.count,
+    };
+  }
 }
