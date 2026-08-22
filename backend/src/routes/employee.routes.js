@@ -5,6 +5,7 @@ import { SkillController } from '../controllers/skill.controller.js';
 import { CertificationController } from '../controllers/certification.controller.js';
 import { DocumentController } from '../controllers/document.controller.js';
 import { PrivateInfoController } from '../controllers/privateInfo.controller.js';
+import { BankDetailsController } from '../controllers/bankDetails.controller.js';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -285,10 +286,32 @@ const updatePrivateInfoSchema = {
   }),
 };
 
+const updateBankDetailsSchema = {
+  body: z.object({
+    accountNumber: z.string().min(1).optional(),
+    bankName: z.string().min(1).optional(),
+    ifscCode: z.string().min(1).optional(),
+  }),
+};
+
 // Current Employee Profile (/me)
 router.get('/me', EmployeeController.getCurrentProfile);
 router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
 router.put('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
+
+// Current Employee Bank Details (/me/bank-details)
+router.get('/me/bank-details', (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return BankDetailsController.get(req, res, next);
+});
+router.patch('/me/bank-details', validate(updateBankDetailsSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return BankDetailsController.update(req, res, next);
+});
+router.put('/me/bank-details', validate(updateBankDetailsSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return BankDetailsController.update(req, res, next);
+});
 
 // Current Employee Private Info (/me/private-info)
 router.get('/me/private-info', (req, res, next) => {
@@ -380,6 +403,11 @@ router.delete('/:id/documents/:documentId', validate(deleteEmpDocSchema), Docume
 router.get('/:id/private-info', validate(getByIdSchema), PrivateInfoController.get);
 router.patch('/:id/private-info', validate({ params: z.object({ id: z.string().uuid() }), body: updatePrivateInfoSchema.body }), PrivateInfoController.update);
 router.put('/:id/private-info', validate({ params: z.object({ id: z.string().uuid() }), body: updatePrivateInfoSchema.body }), PrivateInfoController.update);
+
+// Employee Bank Details (/:id/bank-details)
+router.get('/:id/bank-details', validate(getByIdSchema), BankDetailsController.get);
+router.patch('/:id/bank-details', validate({ params: z.object({ id: z.string().uuid() }), body: updateBankDetailsSchema.body }), BankDetailsController.update);
+router.put('/:id/bank-details', validate({ params: z.object({ id: z.string().uuid() }), body: updateBankDetailsSchema.body }), BankDetailsController.update);
 
 // Employee CRUD (/ and /:id)
 router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);
