@@ -1,51 +1,76 @@
 # Dependencies
 node_modules/
 **/node_modules/
+.pnp
+.pnp.js
 
-# Environment variables
+# Environment variables & Secrets
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 **/.env
 **/.env.local
+**/.env.*.local
+!**/.env.example
 
-# Next.js
+# Next.js & Frontend Build Outputs
+.next/
 client/.next/
+out/
 client/out/
 client/next-env.d.ts
+*.tsbuildinfo
 
-# Build output
+# Build & Bundle Outputs
 dist/
 build/
 **/dist/
 **/build/
 
-# Prisma
-server/prisma/dev.db
-server/prisma/dev.db-journal
+# Prisma & local SQLite DBs
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
 
-# Logs
+# Logs & Debugging
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-*.log
+pnpm-debug.log*
+lerna-debug.log*
 
-# Editor / OS
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Uploads & Temporary Directories
+uploads/
+**/uploads/
+tmp/
+temp/
+
+# OS & Editor Specific Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
+*.swp
+*.swo
+*~
 
-# Testing / coverage
-coverage/
 
-# TypeScript build info
-*.tsbuildinfo
 
-# Planning docs / source assets (not part of the shipped app)
+# Planning docs / source assets
 docs/
-*.pdf
-*.excalidraw
-
-# Claude Code tooling (local dev only, not part of the app)
-.claude/
+PLAN/*.pdf
+PLAN/*.excalidraw
