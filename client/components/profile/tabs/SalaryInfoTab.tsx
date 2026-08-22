@@ -134,17 +134,20 @@ export default function SalaryInfoTab({ userId, canEdit }: SalaryInfoTabProps) {
         </p>
       )}
 
-      {isEditing ? (
-        <TextField
-          label="Monthly Wage (₹)"
-          name="wage"
-          type="number"
-          value={active.wage}
-          onChange={(event) => updateField("wage", Number(event.target.value))}
-        />
-      ) : (
-        <SalaryRow label="Monthly Wage" value={formatCurrency(active.wage)} />
-      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {isEditing ? (
+          <TextField
+            label="Monthly Wage (₹)"
+            name="wage"
+            type="number"
+            value={active.wage}
+            onChange={(event) => updateField("wage", Number(event.target.value))}
+          />
+        ) : (
+          <SalaryRow label="Monthly Wage" value={formatCurrency(active.wage)} />
+        )}
+        <SalaryRow label="Yearly Wage" value={formatCurrency(active.wage * 12)} />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {isEditing ? (
