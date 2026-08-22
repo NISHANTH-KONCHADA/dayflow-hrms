@@ -88,7 +88,14 @@ export class CredentialService {
    */
   static async resetEmployeeCredentials({ companyId, requestingUser, employeeId }) {
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { userId: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
       include: { user: true },
     });
 

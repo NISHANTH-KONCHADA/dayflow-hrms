@@ -519,7 +519,14 @@ export class EmployeeService {
     const today = EmployeeService.getTodayDateOnly();
 
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { userId: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
       include: {
         user: {
           select: { id: true, email: true, role: true, isActive: true, mustChangePassword: true, lastLoginAt: true },
@@ -651,7 +658,14 @@ export class EmployeeService {
    */
   static async updateEmployee({ companyId, requestingUser, employeeId, updateData }) {
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { userId: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
       include: { user: true, bankDetails: true, salaryStructure: true },
     });
 
@@ -677,7 +691,7 @@ export class EmployeeService {
       };
 
       await prisma.employee.update({
-        where: { id: employeeId },
+        where: { id: employee.id },
         data: allowedSelfFields,
       });
 
@@ -884,7 +898,14 @@ export class EmployeeService {
    */
   static async deleteEmployee({ companyId, requestingUser, employeeId }) {
     const employee = await prisma.employee.findFirst({
-      where: { id: employeeId, companyId },
+      where: {
+        companyId,
+        OR: [
+          { id: employeeId },
+          { userId: employeeId },
+          { user: { id: employeeId } },
+        ],
+      },
       include: { user: true },
     });
 

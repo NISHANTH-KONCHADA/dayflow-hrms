@@ -11,7 +11,7 @@ interface EmployeeCardProps {
 export default function EmployeeCard({ user, status }: EmployeeCardProps) {
   return (
     <Link
-      href={`/employees/${user.id}`}
+      href={`/employees/${user.employeeId || user.id}`}
       className="flex flex-col items-center gap-2 rounded-lg border border-border bg-surface p-4 text-center transition-shadow hover:shadow-md"
     >
       <div className="relative">

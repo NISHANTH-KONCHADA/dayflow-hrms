@@ -39,7 +39,7 @@ export default function AdminDashboard() {
 
       const mapped: EmployeeWithStatus[] = rawList.map((emp: any) => {
         const u: User = {
-          id: emp.user?.id || emp.id,
+          id: emp.id,
           employeeId: emp.id,
           loginId: emp.loginId || "",
           employeeCode: emp.employeeCode || "",
