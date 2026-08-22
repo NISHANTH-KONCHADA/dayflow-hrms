@@ -178,4 +178,140 @@ export class LeaveController {
       next(err);
     }
   }
+
+  /**
+   * ==========================================
+   * LEAVE REQUESTS
+   * ==========================================
+   */
+
+  static async createLeaveRequest(req, res, next) {
+    try {
+      const { leaveTypeId, startDate, endDate, requestedDays, reason, attachmentUrl, attachmentName } = req.body;
+      const result = await LeaveService.createLeaveRequest({
+        requestingUser: req.user,
+        leaveTypeId,
+        startDate,
+        endDate,
+        requestedDays,
+        reason,
+        attachmentUrl,
+        attachmentName,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 201,
+        message: 'Leave request submitted successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getPersonalLeaveRequests(req, res, next) {
+    try {
+      const { status, year, startDate, endDate, page, limit } = req.query;
+      const result = await LeaveService.getPersonalLeaveRequests({
+        requestingUser: req.user,
+        status,
+        year,
+        startDate,
+        endDate,
+        page,
+        limit,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getAdminLeaveRequests(req, res, next) {
+    try {
+      const { status, departmentId, employeeId, leaveTypeId, search, startDate, endDate, page, limit } = req.query;
+      const result = await LeaveService.getAdminLeaveRequests({
+        companyId: req.user.companyId,
+        status,
+        departmentId,
+        employeeId,
+        leaveTypeId,
+        search,
+        startDate,
+        endDate,
+        page,
+        limit,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getLeaveRequestById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await LeaveService.getLeaveRequestById({
+        requestingUser: req.user,
+        id,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async approveLeaveRequest(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { reviewerComment } = req.body || {};
+
+      const result = await LeaveService.approveLeaveRequest({
+        requestingUser: req.user,
+        id,
+        reviewerComment,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Leave request approved successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async rejectLeaveRequest(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { reviewerComment } = req.body || {};
+
+      const result = await LeaveService.rejectLeaveRequest({
+        requestingUser: req.user,
+        id,
+        reviewerComment,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Leave request rejected successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

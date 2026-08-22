@@ -104,3 +104,95 @@ export async function updateEmployeeLeaveAllocation(
   if (!response.ok) throw new Error(result.message || 'Failed to update leave allocation');
   return result.data;
 }
+
+// ==========================================
+// LEAVE REQUESTS
+// ==========================================
+
+export async function createLeaveRequest(data: {
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  requestedDays?: number;
+  reason?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/leave-requests`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to submit leave request');
+  return result.data;
+}
+
+export async function getPersonalLeaveRequests(params?: {
+  status?: string;
+  year?: number;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  const url = `${API_BASE_URL}/leave-requests/me${query ? `?${query}` : ''}`;
+  const response = await fetch(url, { credentials: 'include' });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch personal leave requests');
+  return result.data;
+}
+
+export async function getAdminLeaveRequests(params?: {
+  status?: string;
+  departmentId?: string;
+  employeeId?: string;
+  leaveTypeId?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  const url = `${API_BASE_URL}/leave-requests${query ? `?${query}` : ''}`;
+  const response = await fetch(url, { credentials: 'include' });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch admin leave requests');
+  return result.data;
+}
+
+export async function getLeaveRequestById(id: string) {
+  const response = await fetch(`${API_BASE_URL}/leave-requests/${id}`, {
+    credentials: 'include',
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch leave request');
+  return result.data;
+}
+
+export async function approveLeaveRequest(id: string, reviewerComment?: string) {
+  const response = await fetch(`${API_BASE_URL}/leave-requests/${id}/approve`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ reviewerComment }),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to approve leave request');
+  return result.data;
+}
+
+export async function rejectLeaveRequest(id: string, reviewerComment?: string) {
+  const response = await fetch(`${API_BASE_URL}/leave-requests/${id}/reject`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ reviewerComment }),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to reject leave request');
+  return result.data;
+}
