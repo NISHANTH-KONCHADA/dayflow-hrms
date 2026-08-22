@@ -471,8 +471,39 @@ export class EmployeeService {
       };
     });
 
+    // Fetch fully populated employee with relations
+    const fullEmployee = await prisma.employee.findUnique({
+      where: { id: result.employee.id },
+      include: {
+        user: {
+          select: { id: true, email: true, role: true, isActive: true, mustChangePassword: true },
+        },
+        department: true,
+        jobPosition: true,
+        manager: {
+          select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true },
+        },
+        bankDetails: true,
+        workingSchedule: true,
+        salaryStructure: {
+          include: {
+            components: {
+              orderBy: { sequence: 'asc' },
+            },
+          },
+        },
+        leaveAllocations: {
+          where: { year: joiningYear },
+          include: { leaveType: true },
+        },
+        skills: {
+          include: { skill: true },
+        },
+      },
+    });
+
     return {
-      employee: result.employee,
+      employee: fullEmployee,
       initialCredentials: {
         email: workEmail,
         loginId,
