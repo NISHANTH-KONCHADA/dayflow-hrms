@@ -2,10 +2,10 @@ export function validate(schema) {
   return async (req, res, next) => {
     try {
       if (schema.body) {
-        req.body = await schema.body.parseAsync(req.body);
+        req.body = await schema.body.parseAsync(req.body || {});
       }
       if (schema.query) {
-        const parsed = await schema.query.parseAsync(req.query);
+        const parsed = await schema.query.parseAsync(req.query || {});
         try {
           Object.assign(req.query, parsed);
         } catch {
@@ -14,12 +14,13 @@ export function validate(schema) {
         req.validatedQuery = parsed;
       }
       if (schema.params) {
-        const parsed = await schema.params.parseAsync(req.params);
+        const parsed = await schema.params.parseAsync(req.params || {});
         try {
           Object.assign(req.params, parsed);
         } catch {
           req.params = parsed;
         }
+        req.validatedParams = parsed;
       }
       next();
     } catch (err) {

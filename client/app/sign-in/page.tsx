@@ -7,9 +7,8 @@ import TextField from "@/components/ui/TextField";
 import Button from "@/components/ui/Button";
 
 const DEMO_ACCOUNTS = [
-  { label: "Admin / HR", identifier: "admin@dayflow.local" },
-  { label: "Employee", identifier: "john.doe@dayflow.local" },
-  { label: "Employee (forced reset)", identifier: "riya.shah@dayflow.local" },
+  { label: "Super Admin", identifier: "admin@dayflow.com", pass: "Admin@123456" },
+  { label: "Employee (John Doe)", identifier: "john.doe@dayflow.com", pass: "Password@123" },
 ];
 
 interface FieldErrors {
@@ -55,8 +54,13 @@ export default function SignInPage() {
     router.replace(result.user.mustResetPassword ? "/reset-password" : "/dashboard");
   }
 
+  function handleQuickFill(acc: typeof DEMO_ACCOUNTS[0]) {
+    setIdentifier(acc.identifier);
+    setPassword(acc.pass);
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center px-4 bg-background">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
@@ -69,7 +73,7 @@ export default function SignInPage() {
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-6"
+          className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-6 shadow-sm"
         >
           {formError && (
             <p role="alert" className="rounded-md bg-status-danger/10 px-3 py-2 text-sm text-status-danger">
@@ -101,14 +105,20 @@ export default function SignInPage() {
         </form>
 
         <div className="mt-4 rounded-lg border border-dashed border-border p-4 text-xs text-muted">
-          <p className="mb-1 font-medium text-foreground">Demo accounts (password: Password@123)</p>
-          <ul className="space-y-0.5">
+          <p className="mb-2 font-medium text-foreground">Quick test login:</p>
+          <div className="flex flex-col gap-1.5">
             {DEMO_ACCOUNTS.map((account) => (
-              <li key={account.identifier}>
-                {account.label} — {account.identifier}
-              </li>
+              <button
+                key={account.identifier}
+                type="button"
+                onClick={() => handleQuickFill(account)}
+                className="flex items-center justify-between rounded px-2 py-1 text-left text-xs bg-muted/20 hover:bg-muted/40 text-foreground transition-colors"
+              >
+                <span>{account.label}</span>
+                <span className="text-[10px] text-muted">{account.identifier}</span>
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </div>

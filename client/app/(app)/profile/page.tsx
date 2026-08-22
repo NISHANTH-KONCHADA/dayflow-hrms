@@ -1,12 +1,14 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import ProfileView from "@/components/profile/ProfileView";
+import EmployeeDetailPage from "../employees/[id]/page";
 
-export default function ProfilePage() {
+export default function MyProfilePage() {
   const { user } = useAuth();
 
   if (!user) return null;
 
-  return <ProfileView userId={user.id} editable />;
+  const paramsPromise = Promise.resolve({ id: user.employeeId || user.id });
+
+  return <EmployeeDetailPage params={paramsPromise} />;
 }

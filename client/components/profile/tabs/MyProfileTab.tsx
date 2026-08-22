@@ -18,7 +18,7 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
   const [phone, setPhone] = useState(user.phone);
   const [profilePictureUrl, setProfilePictureUrl] = useState(user.profilePictureUrl ?? "");
   const [about, setAbout] = useState(user.about);
-  const [whatILoveAboutMyJob, setWhatILoveAboutMyJob] = useState(user.whatILoveAboutMyJob);
+  const [whatILoveAboutMyJob, setWhatILoveAboutMyJob] = useState(user.whatILoveAboutMyJob ?? "");
   const [interests, setInterests] = useState(user.interests);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
     setPhone(user.phone);
     setProfilePictureUrl(user.profilePictureUrl ?? "");
     setAbout(user.about);
-    setWhatILoveAboutMyJob(user.whatILoveAboutMyJob);
+    setWhatILoveAboutMyJob(user.whatILoveAboutMyJob ?? "");
     setInterests(user.interests);
     setError(null);
     setIsEditing(true);
@@ -43,7 +43,7 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
       phone: phone.trim(),
       profilePictureUrl: profilePictureUrl.trim() || null,
       about: about.trim(),
-      whatILoveAboutMyJob: whatILoveAboutMyJob.trim(),
+      whatILoveAboutMyJob: (whatILoveAboutMyJob ?? "").trim(),
       interests: interests.trim(),
     });
     setSaving(false);
@@ -113,8 +113,8 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
 
       <NarrativeField
         label="What I Love About My Job"
-        value={whatILoveAboutMyJob}
-        displayValue={user.whatILoveAboutMyJob}
+        value={whatILoveAboutMyJob ?? ""}
+        displayValue={user.whatILoveAboutMyJob ?? ""}
         isEditing={isEditing}
         rows={2}
         onChange={setWhatILoveAboutMyJob}

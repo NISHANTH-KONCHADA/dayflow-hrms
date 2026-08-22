@@ -24,7 +24,7 @@ export default function ResumeTab({ user, editable, onUpdated }: ResumeTabProps)
 
   async function handleSave() {
     setSaving(true);
-    const updated = await updateUser(user.id, { resumeUrl: resumeUrl.trim() || null });
+    const updated = await updateUser(user.id, { resumeUrl: resumeUrl.trim() || undefined });
     setSaving(false);
     if (updated) {
       onUpdated(updated);

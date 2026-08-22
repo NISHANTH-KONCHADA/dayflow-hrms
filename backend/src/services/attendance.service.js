@@ -5,8 +5,18 @@ import { ApiError } from '../utils/apiResponse.js';
  * Normalizes a date string or Date object to UTC midnight (00:00:00.000Z).
  */
 function normalizeWorkDate(dateInput) {
-  const d = dateInput ? new Date(dateInput) : new Date();
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  if (typeof dateInput === 'string' && dateInput.includes('T')) {
+    const d = new Date(dateInput);
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  } else if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+    const [y, m, d] = dateInput.trim().split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  } else if (dateInput instanceof Date) {
+    return new Date(Date.UTC(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate()));
+  } else {
+    const now = new Date();
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  }
 }
 
 /**
@@ -400,7 +410,7 @@ export class AttendanceService {
       const m = parseInt(month, 10);
       const y = parseInt(year, 10);
       const startOfMonth = new Date(Date.UTC(y, m - 1, 1));
-      const endOfMonth = new Date(Date.UTC(y, m, 0));
+      const endOfMonth = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
       where.workDate = {
         gte: startOfMonth,
         lte: endOfMonth,
@@ -411,9 +421,18 @@ export class AttendanceService {
       if (endDate) where.workDate.lte = normalizeWorkDate(endDate);
     }
 
-    const records = await prisma.attendance.findMany({
-      where,
-    });
+    const todayDate = normalizeWorkDate();
+    const [records, todayAttendance] = await Promise.all([
+      prisma.attendance.findMany({ where }),
+      prisma.attendance.findUnique({
+        where: {
+          employeeId_workDate: {
+            employeeId: targetEmployeeId,
+            workDate: todayDate,
+          },
+        },
+      }),
+    ]);
 
     let presentDays = 0;
     let absentDays = 0;
@@ -432,8 +451,23 @@ export class AttendanceService {
       totalExtraMinutes += r.extraMinutes || 0;
     }
 
+    const totalWorkHours = Math.round((totalWorkMinutes / 60) * 100) / 100;
+    const totalExtraHours = Math.round((totalExtraMinutes / 60) * 100) / 100;
+
     return {
       employeeId: targetEmployeeId,
+      todayAttendance: todayAttendance || null,
+      metrics: {
+        totalDays: records.length,
+        presentDays,
+        absentDays,
+        halfDays,
+        leaveDays,
+        totalWorkMinutes,
+        totalExtraMinutes,
+        totalWorkHours,
+        totalExtraHours,
+      },
       totalDays: records.length,
       presentDays,
       absentDays,
@@ -441,8 +475,8 @@ export class AttendanceService {
       leaveDays,
       totalWorkMinutes,
       totalExtraMinutes,
-      totalWorkHours: Math.round((totalWorkMinutes / 60) * 100) / 100,
-      totalExtraHours: Math.round((totalExtraMinutes / 60) * 100) / 100,
+      totalWorkHours,
+      totalExtraHours,
     };
   }
 

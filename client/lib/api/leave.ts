@@ -1,3 +1,5 @@
+import { getAuthHeaders } from './auth';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // ==========================================
@@ -5,9 +7,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
 // ==========================================
 
 export async function getLeaveTypes(params?: { isActive?: boolean }) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
-  const url = `${API_BASE_URL}/leave-types${query ? `?${query}` : ''}`;
-  const response = await fetch(url, { credentials: 'include' });
+  const queryParams = new URLSearchParams();
+  if (params?.isActive !== undefined) queryParams.append('isActive', String(params.isActive));
+  const url = `${API_BASE_URL}/leave-types${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const response = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to fetch leave types');
   return result.data;
@@ -23,7 +26,7 @@ export async function createLeaveType(data: {
 }) {
   const response = await fetch(`${API_BASE_URL}/leave-types`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -35,7 +38,7 @@ export async function createLeaveType(data: {
 export async function updateLeaveType(id: string, data: Record<string, any>) {
   const response = await fetch(`${API_BASE_URL}/leave-types/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -47,6 +50,7 @@ export async function updateLeaveType(id: string, data: Record<string, any>) {
 export async function deleteLeaveType(id: string) {
   const response = await fetch(`${API_BASE_URL}/leave-types/${id}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
     credentials: 'include',
   });
   const result = await response.json();
@@ -60,7 +64,7 @@ export async function deleteLeaveType(id: string) {
 
 export async function getPersonalLeaveAllocations(year?: number) {
   const url = `${API_BASE_URL}/leave-allocations/me${year ? `?year=${year}` : ''}`;
-  const response = await fetch(url, { credentials: 'include' });
+  const response = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to fetch personal leave allocations');
   return result.data;
@@ -68,7 +72,7 @@ export async function getPersonalLeaveAllocations(year?: number) {
 
 export async function getEmployeeLeaveAllocations(employeeId: string, year?: number) {
   const url = `${API_BASE_URL}/employees/${employeeId}/leave-allocations${year ? `?year=${year}` : ''}`;
-  const response = await fetch(url, { credentials: 'include' });
+  const response = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to fetch employee leave allocations');
   return result.data;
@@ -80,7 +84,7 @@ export async function createEmployeeLeaveAllocation(
 ) {
   const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/leave-allocations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -96,7 +100,7 @@ export async function updateEmployeeLeaveAllocation(
 ) {
   const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/leave-allocations/${allocationId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -120,7 +124,7 @@ export async function createLeaveRequest(data: {
 }) {
   const response = await fetch(`${API_BASE_URL}/leave-requests`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -137,9 +141,16 @@ export async function getPersonalLeaveRequests(params?: {
   page?: number;
   limit?: number;
 }) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
-  const url = `${API_BASE_URL}/leave-requests/me${query ? `?${query}` : ''}`;
-  const response = await fetch(url, { credentials: 'include' });
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.year) queryParams.append('year', String(params.year));
+  if (params?.startDate) queryParams.append('startDate', params.startDate);
+  if (params?.endDate) queryParams.append('endDate', params.endDate);
+  if (params?.page) queryParams.append('page', String(params.page));
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+
+  const url = `${API_BASE_URL}/leave-requests/me${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const response = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to fetch personal leave requests');
   return result.data;
@@ -156,9 +167,19 @@ export async function getAdminLeaveRequests(params?: {
   page?: number;
   limit?: number;
 }) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
-  const url = `${API_BASE_URL}/leave-requests${query ? `?${query}` : ''}`;
-  const response = await fetch(url, { credentials: 'include' });
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.departmentId) queryParams.append('departmentId', params.departmentId);
+  if (params?.employeeId) queryParams.append('employeeId', params.employeeId);
+  if (params?.leaveTypeId) queryParams.append('leaveTypeId', params.leaveTypeId);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.startDate) queryParams.append('startDate', params.startDate);
+  if (params?.endDate) queryParams.append('endDate', params.endDate);
+  if (params?.page) queryParams.append('page', String(params.page));
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+
+  const url = `${API_BASE_URL}/leave-requests${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const response = await fetch(url, { headers: getAuthHeaders(), credentials: 'include' });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to fetch admin leave requests');
   return result.data;
@@ -166,6 +187,7 @@ export async function getAdminLeaveRequests(params?: {
 
 export async function getLeaveRequestById(id: string) {
   const response = await fetch(`${API_BASE_URL}/leave-requests/${id}`, {
+    headers: getAuthHeaders(),
     credentials: 'include',
   });
   const result = await response.json();
@@ -176,7 +198,7 @@ export async function getLeaveRequestById(id: string) {
 export async function approveLeaveRequest(id: string, reviewerComment?: string) {
   const response = await fetch(`${API_BASE_URL}/leave-requests/${id}/approve`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify({ reviewerComment }),
   });
@@ -188,7 +210,7 @@ export async function approveLeaveRequest(id: string, reviewerComment?: string) 
 export async function rejectLeaveRequest(id: string, reviewerComment?: string) {
   const response = await fetch(`${API_BASE_URL}/leave-requests/${id}/reject`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify({ reviewerComment }),
   });
@@ -200,7 +222,7 @@ export async function rejectLeaveRequest(id: string, reviewerComment?: string) {
 export async function uploadLeaveAttachment(id: string, data: { attachmentUrl: string; attachmentName?: string }) {
   const response = await fetch(`${API_BASE_URL}/leave-requests/${id}/attachment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
