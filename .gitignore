@@ -46,3 +46,6 @@ coverage/
 docs/
 *.pdf
 *.excalidraw
+
+# Claude Code tooling (local dev only, not part of the app)
+.claude/
