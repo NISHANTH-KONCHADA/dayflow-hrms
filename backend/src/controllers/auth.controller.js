@@ -2,17 +2,37 @@ import { AuthService } from '../services/auth.service.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 
 export class AuthController {
+  static async register(req, res, next) {
+    try {
+      const result = await AuthService.registerOrganization(req.body);
+
+      res.cookie('token', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 201,
+        message: 'Organization and Admin account registered successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async login(req, res, next) {
     try {
       const { identifier, password } = req.body;
       const result = await AuthService.login({ identifier, password });
 
-      // Set HTTP-only cookie as well for flexibility
       res.cookie('token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
       return ApiResponse.success(res, {
