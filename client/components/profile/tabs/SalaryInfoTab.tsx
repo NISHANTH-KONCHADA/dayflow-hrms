@@ -147,6 +147,32 @@ export default function SalaryInfoTab({ userId, canEdit }: SalaryInfoTabProps) {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {isEditing ? (
+          <TextField
+            label="No of Working Days in a Week"
+            name="workingDaysPerWeek"
+            type="number"
+            value={active.workingDaysPerWeek}
+            onChange={(event) => updateField("workingDaysPerWeek", Number(event.target.value))}
+          />
+        ) : (
+          <SalaryRow label="No of Working Days in a Week" value={String(active.workingDaysPerWeek)} />
+        )}
+        {isEditing ? (
+          <TextField
+            label="Break Time (hrs)"
+            name="breakTimeHours"
+            type="number"
+            step="0.5"
+            value={active.breakTimeHours}
+            onChange={(event) => updateField("breakTimeHours", Number(event.target.value))}
+          />
+        ) : (
+          <SalaryRow label="Break Time" value={`${active.breakTimeHours} hrs`} />
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {PERCENT_FIELDS.map((field) =>
           isEditing ? (
             <TextField

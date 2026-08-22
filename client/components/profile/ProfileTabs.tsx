@@ -2,7 +2,14 @@
 
 import { cn } from "@/lib/cn";
 
-export type ProfileTabId = "profile" | "private" | "resume" | "skills" | "certifications" | "salary";
+export type ProfileTabId =
+  | "profile"
+  | "private"
+  | "resume"
+  | "skills"
+  | "certifications"
+  | "salary"
+  | "security";
 
 interface Tab {
   id: ProfileTabId;
@@ -18,15 +25,21 @@ const BASE_TABS: Tab[] = [
 ];
 
 const SALARY_TAB: Tab = { id: "salary", label: "Salary Info" };
+const SECURITY_TAB: Tab = { id: "security", label: "Security" };
 
 interface ProfileTabsProps {
   active: ProfileTabId;
   onChange: (tab: ProfileTabId) => void;
   showSalaryTab: boolean;
+  showSecurityTab: boolean;
 }
 
-export default function ProfileTabs({ active, onChange, showSalaryTab }: ProfileTabsProps) {
-  const tabs = showSalaryTab ? [...BASE_TABS, SALARY_TAB] : BASE_TABS;
+export default function ProfileTabs({ active, onChange, showSalaryTab, showSecurityTab }: ProfileTabsProps) {
+  const tabs = [
+    ...BASE_TABS,
+    ...(showSalaryTab ? [SALARY_TAB] : []),
+    ...(showSecurityTab ? [SECURITY_TAB] : []),
+  ];
 
   return (
     <div className="flex flex-wrap gap-1 border-b border-border">

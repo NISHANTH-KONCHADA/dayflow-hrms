@@ -56,6 +56,20 @@ export function setCredential(userId: string, password: string): void {
   db.credentials[userId] = password;
 }
 
+/** Self-service password change from the Security tab (as opposed to the forced first-login reset). */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: true } | { error: string }> {
+  if (db.credentials[userId] !== currentPassword) {
+    return resolveAfter({ error: "Current password is incorrect." });
+  }
+
+  db.credentials[userId] = newPassword;
+  return resolveAfter({ success: true });
+}
+
 /** Readable temp password for newly-created accounts — satisfies the strength validator. */
 export function generateTempPassword(): string {
   const digits = Math.floor(1000 + Math.random() * 9000);

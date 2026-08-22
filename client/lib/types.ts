@@ -34,6 +34,7 @@ export interface User {
   resumeUrl: string | null;
 
   about: string;
+  whatILoveAboutMyJob: string;
   interests: string;
 }
 
@@ -95,6 +96,8 @@ export interface LeaveRequest {
 export interface SalaryStructure {
   userId: string;
   wage: number;
+  workingDaysPerWeek: number;
+  breakTimeHours: number;
   basicPct: number;
   hraPct: number;
   standardAllowance: number;

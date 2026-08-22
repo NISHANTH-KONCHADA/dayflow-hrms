@@ -119,6 +119,7 @@ export async function createEmployee(
     profilePictureUrl: null,
     resumeUrl: null,
     about: "",
+    whatILoveAboutMyJob: "",
     interests: "",
   };
 
@@ -131,6 +132,8 @@ export async function createEmployee(
   db.payroll.push({
     userId: id,
     wage: 0,
+    workingDaysPerWeek: 5,
+    breakTimeHours: 1,
     basicPct: 50,
     hraPct: 50,
     standardAllowance: 4167,
@@ -178,7 +181,10 @@ export async function getProfileBundle(userId: string): Promise<ProfileBundle | 
 }
 
 type EditableUserFields = Partial<
-  Pick<User, "phone" | "address" | "profilePictureUrl" | "about" | "interests" | "resumeUrl">
+  Pick<
+    User,
+    "phone" | "address" | "profilePictureUrl" | "about" | "whatILoveAboutMyJob" | "interests" | "resumeUrl"
+  >
 >;
 
 export async function updateUser(userId: string, patch: EditableUserFields): Promise<User | undefined> {

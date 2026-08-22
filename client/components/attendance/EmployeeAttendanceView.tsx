@@ -48,7 +48,7 @@ export default function EmployeeAttendanceView() {
 
   const presentCount = monthRecords.filter((r) => r.status === "present" || r.status === "half_day").length;
   const leaveCount = monthRecords.filter((r) => r.status === "leave").length;
-  const absentCount = monthRecords.filter((r) => r.status === "absent").length;
+  const totalWorkingDays = monthRecords.length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,9 +73,9 @@ export default function EmployeeAttendanceView() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <SummaryStat label="Present" value={presentCount} />
-        <SummaryStat label="On Leave" value={leaveCount} />
-        <SummaryStat label="Absent" value={absentCount} />
+        <SummaryStat label="Days Present" value={presentCount} />
+        <SummaryStat label="Leaves" value={leaveCount} />
+        <SummaryStat label="Total Working Days" value={totalWorkingDays} />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">

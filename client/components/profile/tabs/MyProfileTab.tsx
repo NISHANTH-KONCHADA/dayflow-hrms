@@ -18,6 +18,7 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
   const [phone, setPhone] = useState(user.phone);
   const [profilePictureUrl, setProfilePictureUrl] = useState(user.profilePictureUrl ?? "");
   const [about, setAbout] = useState(user.about);
+  const [whatILoveAboutMyJob, setWhatILoveAboutMyJob] = useState(user.whatILoveAboutMyJob);
   const [interests, setInterests] = useState(user.interests);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
     setPhone(user.phone);
     setProfilePictureUrl(user.profilePictureUrl ?? "");
     setAbout(user.about);
+    setWhatILoveAboutMyJob(user.whatILoveAboutMyJob);
     setInterests(user.interests);
     setError(null);
     setIsEditing(true);
@@ -41,6 +43,7 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
       phone: phone.trim(),
       profilePictureUrl: profilePictureUrl.trim() || null,
       about: about.trim(),
+      whatILoveAboutMyJob: whatILoveAboutMyJob.trim(),
       interests: interests.trim(),
     });
     setSaving(false);
@@ -99,33 +102,59 @@ export default function MyProfileTab({ user, editable, onUpdated }: MyProfileTab
         />
       )}
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-muted">About</span>
-        {isEditing ? (
-          <textarea
-            value={about}
-            onChange={(event) => setAbout(event.target.value)}
-            rows={3}
-            className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-          />
-        ) : (
-          <p className="text-sm text-foreground">{user.about || "—"}</p>
-        )}
-      </div>
+      <NarrativeField
+        label="About"
+        value={about}
+        displayValue={user.about}
+        isEditing={isEditing}
+        rows={3}
+        onChange={setAbout}
+      />
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-muted">Interests &amp; Hobbies</span>
-        {isEditing ? (
-          <textarea
-            value={interests}
-            onChange={(event) => setInterests(event.target.value)}
-            rows={2}
-            className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-          />
-        ) : (
-          <p className="text-sm text-foreground">{user.interests || "—"}</p>
-        )}
-      </div>
+      <NarrativeField
+        label="What I Love About My Job"
+        value={whatILoveAboutMyJob}
+        displayValue={user.whatILoveAboutMyJob}
+        isEditing={isEditing}
+        rows={2}
+        onChange={setWhatILoveAboutMyJob}
+      />
+
+      <NarrativeField
+        label="Interests & Hobbies"
+        value={interests}
+        displayValue={user.interests}
+        isEditing={isEditing}
+        rows={2}
+        onChange={setInterests}
+      />
+    </div>
+  );
+}
+
+interface NarrativeFieldProps {
+  label: string;
+  value: string;
+  displayValue: string;
+  isEditing: boolean;
+  rows: number;
+  onChange: (value: string) => void;
+}
+
+function NarrativeField({ label, value, displayValue, isEditing, rows, onChange }: NarrativeFieldProps) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-muted">{label}</span>
+      {isEditing ? (
+        <textarea
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          rows={rows}
+          className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+        />
+      ) : (
+        <p className="text-sm text-foreground">{displayValue || "—"}</p>
+      )}
     </div>
   );
 }

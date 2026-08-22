@@ -24,6 +24,7 @@
     "profilePictureUrl": null,
     "resumeUrl": null,
     "about": "Leads HR operations and payroll for the Bengaluru office.",
+    "whatILoveAboutMyJob": "Getting to be the person who makes the workplace actually work for people.",
     "interests": "Trekking, classical music"
   },
   {
@@ -51,6 +52,7 @@
     "profilePictureUrl": null,
     "resumeUrl": null,
     "about": "Builds and ships the Dayflow frontend.",
+    "whatILoveAboutMyJob": "Shipping something and watching real people use it the same day.",
     "interests": "Chess, open-source"
   },
   {
@@ -78,6 +80,7 @@
     "profilePictureUrl": null,
     "resumeUrl": null,
     "about": "Owns the attendance and leave APIs.",
+    "whatILoveAboutMyJob": "Untangling a messy backend problem until the fix is obvious in hindsight.",
     "interests": "Reading, badminton"
   },
   {
@@ -105,6 +108,7 @@
     "profilePictureUrl": null,
     "resumeUrl": null,
     "about": "Designs the Dayflow product experience.",
+    "whatILoveAboutMyJob": "Turning a confusing flow into something that just makes sense.",
     "interests": "Illustration, cycling"
   },
   {
@@ -132,6 +136,7 @@
     "profilePictureUrl": null,
     "resumeUrl": null,
     "about": "Manages key client accounts.",
+    "whatILoveAboutMyJob": "The moment a client goes from skeptical to genuinely excited.",
     "interests": "Running, cooking"
   }
 ]

@@ -9,6 +9,7 @@ import ResumeTab from "@/components/profile/tabs/ResumeTab";
 import SkillsTab from "@/components/profile/tabs/SkillsTab";
 import CertificationsTab from "@/components/profile/tabs/CertificationsTab";
 import SalaryInfoTab from "@/components/profile/tabs/SalaryInfoTab";
+import SecurityTab from "@/components/profile/tabs/SecurityTab";
 import { getProfileBundle, type ProfileBundle } from "@/lib/mock";
 import { useAuth } from "@/context/AuthContext";
 import type { Certification, Skill, User } from "@/lib/types";
@@ -95,7 +96,12 @@ export default function ProfileView({ userId, editable }: ProfileViewProps) {
         </div>
       </div>
 
-      <ProfileTabs active={activeTab} onChange={setActiveTab} showSalaryTab={showSalaryTab} />
+      <ProfileTabs
+        active={activeTab}
+        onChange={setActiveTab}
+        showSalaryTab={showSalaryTab}
+        showSecurityTab={editable}
+      />
 
       {activeTab === "profile" && (
         <MyProfileTab user={user} editable={editable} onUpdated={handleUserUpdated} />
@@ -118,6 +124,7 @@ export default function ProfileView({ userId, editable }: ProfileViewProps) {
       {activeTab === "salary" && showSalaryTab && (
         <SalaryInfoTab userId={user.id} canEdit={isAdminViewer} />
       )}
+      {activeTab === "security" && editable && <SecurityTab user={user} />}
     </div>
   );
 }

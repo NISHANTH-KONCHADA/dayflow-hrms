@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
     if (Object.keys(nextErrors).length > 0) return;
 
     setSubmitting(true);
-    await completePasswordReset(user.id);
+    await completePasswordReset(user.id, newPassword);
     await refreshUser();
     setSubmitting(false);
     router.replace("/dashboard");
