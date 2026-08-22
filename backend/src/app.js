@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import authRoutes from './routes/auth.routes.js';
 import employeeRoutes from './routes/employee.routes.js';
+import departmentRoutes from './routes/department.routes.js';
 import companyRoutes from './routes/company.routes.js';
 import { errorHandler } from './utils/errorHandler.js';
 
@@ -37,6 +38,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/departments', departmentRoutes);
 app.use('/api/company', companyRoutes);
 
 // Global Error Handler
