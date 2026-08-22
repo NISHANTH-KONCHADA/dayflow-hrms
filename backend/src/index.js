@@ -10,6 +10,7 @@ import attendanceRoutes from './routes/attendance.routes.js';
 import leaveTypeRoutes from './routes/leaveType.routes.js';
 import leaveAllocationRoutes from './routes/leaveAllocation.routes.js';
 import leaveRequestRoutes from './routes/leaveRequest.routes.js';
+import salaryRoutes from './routes/salary.routes.js';
 import { errorHandler } from './utils/errorHandler.js';
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leave-types', leaveTypeRoutes);
 app.use('/api/leave-allocations', leaveAllocationRoutes);
 app.use('/api/leave-requests', leaveRequestRoutes);
+app.use('/api/admin/employees', salaryRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
