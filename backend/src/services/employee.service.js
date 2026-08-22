@@ -671,15 +671,15 @@ export class EmployeeService {
         interestsHobbies: updateData.interestsHobbies !== undefined ? updateData.interestsHobbies : employee.interestsHobbies,
       };
 
-      const updated = await prisma.employee.update({
+      await prisma.employee.update({
         where: { id: employeeId },
         data: allowedSelfFields,
       });
 
-      return updated;
+      return EmployeeService.getEmployeeById({ companyId, requestingUser, employeeId });
     }
 
-    const updatedEmployee = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       const employeeUpdate = {
         firstName: updateData.firstName !== undefined ? updateData.firstName.trim() : employee.firstName,
         lastName: updateData.lastName !== undefined ? updateData.lastName.trim() : employee.lastName,
@@ -704,11 +704,16 @@ export class EmployeeService {
         employeeUpdate.dateOfJoining = new Date(updateData.dateOfJoining);
       }
 
-      const emp = await tx.employee.update({
+      if (updateData.dateOfLeaving !== undefined) {
+        employeeUpdate.dateOfLeaving = updateData.dateOfLeaving ? new Date(updateData.dateOfLeaving) : null;
+      }
+
+      await tx.employee.update({
         where: { id: employeeId },
         data: employeeUpdate,
       });
 
+      // Update Bank Details
       if (updateData.accountNumber || updateData.bankName || updateData.ifscCode) {
         await tx.bankDetails.upsert({
           where: { employeeId },
@@ -726,8 +731,46 @@ export class EmployeeService {
         });
       }
 
-      if (updateData.monthlyWage !== undefined) {
-        const newWage = Number(updateData.monthlyWage);
+      // Update Working Schedule
+      if (updateData.workingDays !== undefined || updateData.startTime || updateData.endTime || updateData.breakMinutes !== undefined) {
+        await tx.workingSchedule.upsert({
+          where: { employeeId },
+          update: {
+            workingDays: updateData.workingDays !== undefined ? Number(updateData.workingDays) : undefined,
+            startTime: updateData.startTime || undefined,
+            endTime: updateData.endTime || undefined,
+            breakMinutes: updateData.breakMinutes !== undefined ? Number(updateData.breakMinutes) : undefined,
+          },
+          create: {
+            companyId,
+            employeeId,
+            name: 'Standard Working Schedule',
+            workingDays: updateData.workingDays !== undefined ? Number(updateData.workingDays) : 5,
+            startTime: updateData.startTime || '09:00',
+            endTime: updateData.endTime || '18:00',
+            breakMinutes: updateData.breakMinutes !== undefined ? Number(updateData.breakMinutes) : 60,
+          },
+        });
+      }
+
+      // Update Skills
+      if (Array.isArray(updateData.skillIds)) {
+        await tx.employeeSkill.deleteMany({ where: { employeeId } });
+        if (updateData.skillIds.length > 0) {
+          await tx.employeeSkill.createMany({
+            data: updateData.skillIds.map((sId) => ({
+              employeeId,
+              skillId: sId,
+            })),
+          });
+        }
+      }
+
+      // Update Salary Structure & Recalculate 6 components
+      if (updateData.monthlyWage !== undefined || updateData.employeePfRate !== undefined || updateData.employerPfRate !== undefined || updateData.professionalTax !== undefined) {
+        const currentWage = employee.salaryStructure?.monthlyWage ? Number(employee.salaryStructure.monthlyWage) : 50000;
+        const newWage = updateData.monthlyWage !== undefined ? Number(updateData.monthlyWage) : currentWage;
+
         const salaryStructure = await tx.salaryStructure.upsert({
           where: { employeeId },
           update: {
@@ -746,6 +789,7 @@ export class EmployeeService {
           },
         });
 
+        // Basic = 50% of Wage, HRA = 50% of Basic, Standard = 4167, PB = 8.33% of Basic, LTA = 8.33% of Basic, Fixed = remainder
         const basic = newWage * 0.5;
         const hra = basic * 0.5;
         const standard = 4167;
@@ -753,23 +797,81 @@ export class EmployeeService {
         const lta = basic * 0.0833;
         const remainder = Math.max(0, newWage - (basic + hra + standard + pb + lta));
 
-        await tx.salaryComponent.updateMany({
-          where: { salaryStructureId: salaryStructure.id, code: 'FIXED_ALLOWANCE' },
-          data: { fixedAmount: remainder },
+        await tx.salaryComponent.deleteMany({ where: { salaryStructureId: salaryStructure.id } });
+        await tx.salaryComponent.createMany({
+          data: [
+            {
+              salaryStructureId: salaryStructure.id,
+              code: 'BASIC',
+              name: 'Basic Salary',
+              computationType: 'PERCENTAGE',
+              percentageBase: 'WAGE',
+              percentage: 50.0,
+              sequence: 1,
+              isEarning: true,
+            },
+            {
+              salaryStructureId: salaryStructure.id,
+              code: 'HRA',
+              name: 'House Rent Allowance',
+              computationType: 'PERCENTAGE',
+              percentageBase: 'BASIC',
+              percentage: 50.0,
+              sequence: 2,
+              isEarning: true,
+            },
+            {
+              salaryStructureId: salaryStructure.id,
+              code: 'STANDARD_ALLOWANCE',
+              name: 'Standard Allowance',
+              computationType: 'FIXED',
+              fixedAmount: standard,
+              sequence: 3,
+              isEarning: true,
+            },
+            {
+              salaryStructureId: salaryStructure.id,
+              code: 'PERFORMANCE_BONUS',
+              name: 'Performance Bonus',
+              computationType: 'PERCENTAGE',
+              percentageBase: 'BASIC',
+              percentage: 8.33,
+              sequence: 4,
+              isEarning: true,
+            },
+            {
+              salaryStructureId: salaryStructure.id,
+              code: 'LTA',
+              name: 'Leave Travel Allowance',
+              computationType: 'PERCENTAGE',
+              percentageBase: 'BASIC',
+              percentage: 8.33,
+              sequence: 5,
+              isEarning: true,
+            },
+            {
+              salaryStructureId: salaryStructure.id,
+              code: 'FIXED_ALLOWANCE',
+              name: 'Fixed Allowance (Remainder)',
+              computationType: 'REMAINDER',
+              fixedAmount: remainder,
+              sequence: 6,
+              isEarning: true,
+            },
+          ],
         });
       }
 
+      // Update Role if requested by Admin
       if (updateData.role && employee.user) {
         await tx.user.update({
           where: { id: employee.user.id },
           data: { role: updateData.role },
         });
       }
-
-      return emp;
     });
 
-    return updatedEmployee;
+    return EmployeeService.getEmployeeById({ companyId, requestingUser, employeeId });
   }
 
   /**

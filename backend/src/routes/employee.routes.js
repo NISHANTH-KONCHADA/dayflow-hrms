@@ -100,6 +100,14 @@ const updateEmployeeSchema = {
     employeePfRate: z.number().min(0).max(100).optional(),
     employerPfRate: z.number().min(0).max(100).optional(),
     professionalTax: z.number().min(0).optional(),
+    // Schedule
+    workingDays: z.number().int().min(1).max(7).optional(),
+    startTime: z.string().optional(),
+    endTime: z.string().optional(),
+    breakMinutes: z.number().int().optional(),
+    // Skills
+    skillIds: z.array(z.string().uuid()).optional(),
+    dateOfLeaving: z.string().optional().nullable(),
     // Info
     about: z.string().optional(),
     interestsHobbies: z.string().optional(),
@@ -118,6 +126,7 @@ router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);
 router.post('/', requireRole('ADMIN', 'HR_OFFICER'), validate(createEmployeeSchema), EmployeeController.create);
 router.get('/:id', validate(getByIdSchema), EmployeeController.getById);
 router.put('/:id', validate(updateEmployeeSchema), EmployeeController.update);
+router.patch('/:id', validate(updateEmployeeSchema), EmployeeController.update);
 router.delete('/:id', requireRole('ADMIN'), validate(getByIdSchema), EmployeeController.delete);
 
 export default router;
