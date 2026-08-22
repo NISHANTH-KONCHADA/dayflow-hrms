@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/prisma.js';
 import { ApiError } from '../utils/apiResponse.js';
+import { CredentialService } from './credential.service.js';
 import { LoginIdService } from './loginId.service.js';
 
 export class EmployeeService {
@@ -276,17 +277,15 @@ export class EmployeeService {
     const joiningDate = dateOfJoining ? new Date(dateOfJoining) : new Date();
     const joiningYear = joiningDate.getFullYear();
 
-    const loginId = await LoginIdService.generate({
+    const loginId = await CredentialService.generateLoginId({
       companyId,
       firstName,
       lastName,
       dateOfJoining: joiningDate,
     });
 
-    const totalEmployees = await prisma.employee.count({ where: { companyId } });
-    const employeeCode = `EMP${(totalEmployees + 1).toString().padStart(3, '0')}`;
-
-    const temporaryPassword = `Pass@${crypto.randomBytes(3).toString('hex')}!`;
+    const employeeCode = await CredentialService.generateEmployeeCode({ companyId });
+    const temporaryPassword = CredentialService.generateTemporaryPassword();
     const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -913,5 +912,12 @@ export class EmployeeService {
       employeeId,
       dateOfLeaving: leavingDate,
     };
+  }
+
+  /**
+   * Reset / re-issue temporary login credentials for an employee (Admin/HR only)
+   */
+  static async resetEmployeeCredentials({ companyId, requestingUser, employeeId }) {
+    return CredentialService.resetEmployeeCredentials({ companyId, requestingUser, employeeId });
   }
 }

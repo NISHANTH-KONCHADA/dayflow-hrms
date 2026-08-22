@@ -175,4 +175,27 @@ export class EmployeeController {
       next(err);
     }
   }
+
+  /**
+   * POST /api/employees/:id/reset-credentials
+   * Admin/HR re-generates temporary login credentials for an employee
+   */
+  static async resetCredentials(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await EmployeeService.resetEmployeeCredentials({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: id,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: result.message,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

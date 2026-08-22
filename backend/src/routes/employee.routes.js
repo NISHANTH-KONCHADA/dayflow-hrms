@@ -144,5 +144,6 @@ router.get('/:id', validate(getByIdSchema), EmployeeController.getById);
 router.put('/:id', validate(updateEmployeeSchema), EmployeeController.update);
 router.patch('/:id', validate(updateEmployeeSchema), EmployeeController.update);
 router.delete('/:id', requireRole('ADMIN'), validate(getByIdSchema), EmployeeController.delete);
+router.post('/:id/reset-credentials', requireRole('ADMIN', 'HR_OFFICER'), validate(getByIdSchema), EmployeeController.resetCredentials);
 
 export default router;
