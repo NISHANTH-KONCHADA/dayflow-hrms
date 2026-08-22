@@ -2,6 +2,52 @@ import { EmployeeService } from '../services/employee.service.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 
 export class EmployeeController {
+  /**
+   * GET /api/employees
+   * List employees with search, filters, pagination, and calculated work status
+   */
+  static async getAll(req, res, next) {
+    try {
+      const queryParams = req.validatedQuery || req.query || {};
+      const {
+        search,
+        departmentId,
+        jobPositionId,
+        role,
+        status,
+        sortBy,
+        sortOrder,
+        page,
+        limit,
+      } = queryParams;
+
+      const result = await EmployeeService.getEmployees({
+        companyId: req.user.companyId,
+        search,
+        departmentId,
+        jobPositionId,
+        role,
+        status,
+        sortBy,
+        sortOrder,
+        page,
+        limit,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Employees retrieved successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/employees
+   * Create new employee with auto-provisioning
+   */
   static async create(req, res, next) {
     try {
       const result = await EmployeeService.createEmployee({
@@ -19,27 +65,9 @@ export class EmployeeController {
     }
   }
 
-  static async getAll(req, res, next) {
-    try {
-      const { search, departmentId, status, page, limit } = req.query;
-      const result = await EmployeeService.getEmployees({
-        companyId: req.user.companyId,
-        search,
-        departmentId,
-        status,
-        page,
-        limit,
-      });
-
-      return ApiResponse.success(res, {
-        statusCode: 200,
-        data: result,
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
+  /**
+   * GET /api/employees/:id
+   */
   static async getById(req, res, next) {
     try {
       const { id } = req.params;
@@ -58,6 +86,9 @@ export class EmployeeController {
     }
   }
 
+  /**
+   * PUT /api/employees/:id
+   */
   static async update(req, res, next) {
     try {
       const { id } = req.params;
@@ -78,6 +109,9 @@ export class EmployeeController {
     }
   }
 
+  /**
+   * DELETE /api/employees/:id
+   */
   static async delete(req, res, next) {
     try {
       const { id } = req.params;

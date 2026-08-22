@@ -5,10 +5,21 @@ export function validate(schema) {
         req.body = await schema.body.parseAsync(req.body);
       }
       if (schema.query) {
-        req.query = await schema.query.parseAsync(req.query);
+        const parsed = await schema.query.parseAsync(req.query);
+        try {
+          Object.assign(req.query, parsed);
+        } catch {
+          // In case req.query is frozen or strictly getter-only
+        }
+        req.validatedQuery = parsed;
       }
       if (schema.params) {
-        req.params = await schema.params.parseAsync(req.params);
+        const parsed = await schema.params.parseAsync(req.params);
+        try {
+          Object.assign(req.params, parsed);
+        } catch {
+          req.params = parsed;
+        }
       }
       next();
     } catch (err) {

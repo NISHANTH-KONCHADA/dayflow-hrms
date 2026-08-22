@@ -1,12 +1,12 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import prisma from '../config/db.js';
+import prisma from '../config/prisma.js';
 import { ApiError } from '../utils/apiResponse.js';
 import { LoginIdService } from './loginId.service.js';
 
 export class EmployeeService {
   /**
-   * Helper to compute today's live status for employees
+   * Helper to compute today's date at UTC midnight for accurate date comparisons
    */
   static getTodayDateOnly() {
     const now = new Date();
@@ -14,8 +14,213 @@ export class EmployeeService {
   }
 
   /**
+   * Get employee listing with search, filtering, pagination, and live status calculation.
+   */
+  static async getEmployees({
+    companyId,
+    search,
+    departmentId,
+    jobPositionId,
+    role,
+    status,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    page = 1,
+    limit = 20,
+  }) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Base WHERE clause scoped to the company
+    const where = {
+      companyId,
+      user: { isActive: true },
+    };
+
+    // Filter by department
+    if (departmentId) {
+      where.departmentId = departmentId;
+    }
+
+    // Filter by job position
+    if (jobPositionId) {
+      where.jobPositionId = jobPositionId;
+    }
+
+    // Filter by user role
+    if (role) {
+      where.user = {
+        ...where.user,
+        role: role.toUpperCase(),
+      };
+    }
+
+    // Text search across first name, last name, code, login ID, email, phone
+    if (search && search.trim()) {
+      const q = search.trim();
+      const parts = q.split(/\s+/);
+
+      if (parts.length > 1) {
+        // e.g. "John Doe"
+        where.AND = [
+          { firstName: { contains: parts[0], mode: 'insensitive' } },
+          { lastName: { contains: parts.slice(1).join(' '), mode: 'insensitive' } },
+        ];
+      } else {
+        where.OR = [
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { employeeCode: { contains: q, mode: 'insensitive' } },
+          { loginId: { contains: q, mode: 'insensitive' } },
+          { personalEmail: { contains: q, mode: 'insensitive' } },
+          { phone: { contains: q, mode: 'insensitive' } },
+          { user: { email: { contains: q, mode: 'insensitive' } } },
+        ];
+      }
+    }
+
+    // Sorting
+    let orderBy = {};
+    if (sortBy === 'name') {
+      orderBy = [{ firstName: sortOrder }, { lastName: sortOrder }];
+    } else if (['dateOfJoining', 'employeeCode', 'createdAt'].includes(sortBy)) {
+      orderBy = { [sortBy]: sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc' };
+    } else {
+      orderBy = { createdAt: 'desc' };
+    }
+
+    const today = EmployeeService.getTodayDateOnly();
+
+    // Query employees and total count in parallel
+    const [employees, total] = await Promise.all([
+      prisma.employee.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              isActive: true,
+              lastLoginAt: true,
+            },
+          },
+          department: {
+            select: { id: true, name: true },
+          },
+          jobPosition: {
+            select: { id: true, name: true },
+          },
+          manager: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              employeeCode: true,
+              loginId: true,
+              profilePictureUrl: true,
+            },
+          },
+          attendances: {
+            where: { workDate: today },
+            select: {
+              id: true,
+              checkIn: true,
+              checkOut: true,
+              status: true,
+              workMinutes: true,
+              breakMinutes: true,
+            },
+          },
+          leaveRequests: {
+            where: {
+              status: 'APPROVED',
+              startDate: { lte: today },
+              endDate: { gte: today },
+            },
+            select: {
+              id: true,
+              startDate: true,
+              endDate: true,
+              requestedDays: true,
+              leaveType: {
+                select: { id: true, name: true, code: true, isPaid: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.employee.count({ where }),
+    ]);
+
+    // Format results and compute live status indicator
+    const formatted = employees.map((emp) => {
+      let liveStatus = 'absent'; // 🟡 default if not checked in and not on leave
+      let statusDetail = 'Absent (not checked in)';
+      let todayAttendance = null;
+      let todayLeave = null;
+
+      if (emp.attendances && emp.attendances.length > 0 && emp.attendances[0].checkIn) {
+        liveStatus = 'present'; // 🟢
+        todayAttendance = emp.attendances[0];
+        statusDetail = emp.attendances[0].checkOut
+          ? 'Completed workday'
+          : 'Currently checked in';
+      } else if (emp.leaveRequests && emp.leaveRequests.length > 0) {
+        liveStatus = 'leave'; // ✈️
+        todayLeave = emp.leaveRequests[0];
+        statusDetail = `On ${emp.leaveRequests[0].leaveType.name}`;
+      }
+
+      const fullName = [emp.firstName, emp.lastName].filter(Boolean).join(' ');
+
+      // Destructure raw relation arrays
+      const { attendances, leaveRequests, user, ...rest } = emp;
+
+      return {
+        ...rest,
+        fullName,
+        email: user?.email || emp.personalEmail,
+        role: user?.role || 'EMPLOYEE',
+        user,
+        status: liveStatus,
+        statusDetail,
+        todayAttendance,
+        todayLeave,
+      };
+    });
+
+    // Apply status filtering in memory if requested
+    let finalEmployees = formatted;
+    let filteredTotal = total;
+
+    if (status && ['present', 'leave', 'absent'].includes(status.toLowerCase())) {
+      finalEmployees = formatted.filter((e) => e.status === status.toLowerCase());
+      // If status filter is applied, update total count to match
+      filteredTotal = finalEmployees.length;
+    }
+
+    const totalPages = Math.ceil(filteredTotal / limitNum) || 1;
+
+    return {
+      employees: finalEmployees,
+      pagination: {
+        total: filteredTotal,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+    };
+  }
+
+  /**
    * Admin / HR creates a new employee.
-   * Auto-provisions Login ID, User Account, Leave Balances, Schedule, and Salary Structure.
    */
   static async createEmployee({ requestingUser, data }) {
     const {
@@ -61,7 +266,6 @@ export class EmployeeService {
     const companyId = requestingUser.companyId;
     const workEmail = (email || personalEmail).trim().toLowerCase();
 
-    // Check if email is already taken
     const existingUser = await prisma.user.findUnique({
       where: { email: workEmail },
     });
@@ -72,7 +276,6 @@ export class EmployeeService {
     const joiningDate = dateOfJoining ? new Date(dateOfJoining) : new Date();
     const joiningYear = joiningDate.getFullYear();
 
-    // Generate Login ID (e.g. OIJODO20260001)
     const loginId = await LoginIdService.generate({
       companyId,
       firstName,
@@ -80,16 +283,13 @@ export class EmployeeService {
       dateOfJoining: joiningDate,
     });
 
-    // Auto-generate employeeCode if not provided (EMP + 4-digit serial)
     const totalEmployees = await prisma.employee.count({ where: { companyId } });
     const employeeCode = `EMP${(totalEmployees + 1).toString().padStart(3, '0')}`;
 
-    // Generate temporary password
     const temporaryPassword = `Pass@${crypto.randomBytes(3).toString('hex')}!`;
     const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Employee Record
       const employee = await tx.employee.create({
         data: {
           companyId,
@@ -117,7 +317,6 @@ export class EmployeeService {
         },
       });
 
-      // 2. Create User Account
       const user = await tx.user.create({
         data: {
           companyId,
@@ -130,7 +329,6 @@ export class EmployeeService {
         },
       });
 
-      // 3. Create Bank Details if provided
       if (accountNumber && bankName && ifscCode) {
         await tx.bankDetails.create({
           data: {
@@ -142,7 +340,6 @@ export class EmployeeService {
         });
       }
 
-      // 4. Create Working Schedule
       await tx.workingSchedule.create({
         data: {
           companyId,
@@ -155,7 +352,6 @@ export class EmployeeService {
         },
       });
 
-      // 5. Allocate Leave Balances for all company leave types for the joining year
       const companyLeaveTypes = await tx.leaveType.findMany({
         where: { companyId, isActive: true },
       });
@@ -174,7 +370,6 @@ export class EmployeeService {
         }
       }
 
-      // 6. Create Salary Structure & Standard Components
       const wageNum = Number(monthlyWage);
       const salaryStructure = await tx.salaryStructure.create({
         data: {
@@ -189,8 +384,6 @@ export class EmployeeService {
         },
       });
 
-      // Calculate component breakdown:
-      // Basic = 50% of Wage, HRA = 50% of Basic, Standard = 4167, PB = 8.33% of Basic, LTA = 8.33% of Basic, Fixed = remainder
       const basicAmount = wageNum * 0.5;
       const hraAmount = basicAmount * 0.5;
       const standardAllowance = 4167;
@@ -262,7 +455,6 @@ export class EmployeeService {
         ],
       });
 
-      // 7. Associate Skills if provided
       if (Array.isArray(skillIds) && skillIds.length > 0) {
         await tx.employeeSkill.createMany({
           data: skillIds.map((sId) => ({
@@ -286,105 +478,6 @@ export class EmployeeService {
         loginId,
         temporaryPassword,
         note: 'The employee must reset this temporary password upon initial login.',
-      },
-    };
-  }
-
-  /**
-   * Get all employees with dynamic today status (present, leave, absent)
-   */
-  static async getEmployees({ companyId, search, departmentId, status, page = 1, limit = 50 }) {
-    const where = {
-      companyId,
-      user: { isActive: true },
-    };
-
-    if (departmentId) {
-      where.departmentId = departmentId;
-    }
-
-    if (search) {
-      const q = search.trim();
-      where.OR = [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName: { contains: q, mode: 'insensitive' } },
-        { employeeCode: { contains: q, mode: 'insensitive' } },
-        { loginId: { contains: q, mode: 'insensitive' } },
-        { personalEmail: { contains: q, mode: 'insensitive' } },
-        { user: { email: { contains: q, mode: 'insensitive' } } },
-      ];
-    }
-
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
-
-    const today = EmployeeService.getTodayDateOnly();
-
-    const [employees, total] = await Promise.all([
-      prisma.employee.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: {
-            select: { id: true, email: true, role: true, isActive: true },
-          },
-          department: { select: { id: true, name: true } },
-          jobPosition: { select: { id: true, name: true } },
-          manager: {
-            select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true },
-          },
-          attendances: {
-            where: { workDate: today },
-            select: { id: true, checkIn: true, checkOut: true, status: true, workMinutes: true },
-          },
-          leaveRequests: {
-            where: {
-              status: 'APPROVED',
-              startDate: { lte: today },
-              endDate: { gte: today },
-            },
-            select: { id: true, leaveType: { select: { name: true, code: true } } },
-          },
-        },
-      }),
-      prisma.employee.count({ where }),
-    ]);
-
-    // Map calculated live status
-    const formatted = employees.map((emp) => {
-      let currentStatus = 'absent'; // 🟡
-      let statusDetail = 'Not checked in';
-
-      if (emp.attendances && emp.attendances.length > 0 && emp.attendances[0].checkIn) {
-        currentStatus = 'present'; // 🟢
-        statusDetail = 'Checked in';
-      } else if (emp.leaveRequests && emp.leaveRequests.length > 0) {
-        currentStatus = 'leave'; // ✈️
-        statusDetail = `On leave (${emp.leaveRequests[0].leaveType.name})`;
-      }
-
-      const { attendances, leaveRequests, ...rest } = emp;
-
-      return {
-        ...rest,
-        status: currentStatus,
-        statusDetail,
-        todayAttendance: attendances[0] || null,
-      };
-    });
-
-    // If filtered by status
-    const filtered = status ? formatted.filter((e) => e.status === status.toLowerCase()) : formatted;
-
-    return {
-      employees: filtered,
-      pagination: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
       },
     };
   }
@@ -432,12 +525,10 @@ export class EmployeeService {
       throw new ApiError('Employee not found', 404);
     }
 
-    // Role-based filtering: hide salary and sensitive private info from regular peers
     const isOwner = requestingUser.employeeId === employee.id || requestingUser.userId === employee.user?.id;
     const isAdminOrHr = requestingUser.role === 'ADMIN' || requestingUser.role === 'HR_OFFICER';
 
     if (!isOwner && !isAdminOrHr) {
-      // Redact private info & salary
       const sanitized = {
         ...employee,
         panNumber: undefined,
@@ -453,7 +544,7 @@ export class EmployeeService {
   }
 
   /**
-   * Update employee details (enforces field permissions based on caller role)
+   * Update employee details
    */
   static async updateEmployee({ companyId, requestingUser, employeeId, updateData }) {
     const employee = await prisma.employee.findFirst({
@@ -472,7 +563,6 @@ export class EmployeeService {
       throw new ApiError('Forbidden: Access denied', 403);
     }
 
-    // Employees can only edit self-service fields
     if (!isAdminOrHr && isOwner) {
       const allowedSelfFields = {
         phone: updateData.phone !== undefined ? updateData.phone : employee.phone,
@@ -491,7 +581,6 @@ export class EmployeeService {
       return updated;
     }
 
-    // Admin / HR can update all fields
     const updatedEmployee = await prisma.$transaction(async (tx) => {
       const employeeUpdate = {
         firstName: updateData.firstName !== undefined ? updateData.firstName.trim() : employee.firstName,
@@ -522,7 +611,6 @@ export class EmployeeService {
         data: employeeUpdate,
       });
 
-      // Update Bank Details if supplied
       if (updateData.accountNumber || updateData.bankName || updateData.ifscCode) {
         await tx.bankDetails.upsert({
           where: { employeeId },
@@ -540,7 +628,6 @@ export class EmployeeService {
         });
       }
 
-      // Update Salary Structure if wage is updated
       if (updateData.monthlyWage !== undefined) {
         const newWage = Number(updateData.monthlyWage);
         const salaryStructure = await tx.salaryStructure.upsert({
@@ -561,7 +648,6 @@ export class EmployeeService {
           },
         });
 
-        // Update remainder component (Fixed Allowance)
         const basic = newWage * 0.5;
         const hra = basic * 0.5;
         const standard = 4167;
@@ -575,7 +661,6 @@ export class EmployeeService {
         });
       }
 
-      // Update Role if requested by Admin
       if (updateData.role && employee.user) {
         await tx.user.update({
           where: { id: employee.user.id },
@@ -590,7 +675,7 @@ export class EmployeeService {
   }
 
   /**
-   * Deactivate an employee (Admin only)
+   * Deactivate an employee
    */
   static async deleteEmployee({ companyId, employeeId }) {
     const employee = await prisma.employee.findFirst({
