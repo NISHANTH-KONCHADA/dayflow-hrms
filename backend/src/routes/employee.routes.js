@@ -6,7 +6,9 @@ import { CertificationController } from '../controllers/certification.controller
 import { DocumentController } from '../controllers/document.controller.js';
 import { PrivateInfoController } from '../controllers/privateInfo.controller.js';
 import { BankDetailsController } from '../controllers/bankDetails.controller.js';
-import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
+import { AttendanceController } from '../controllers/attendance.controller.js';
+import { LeaveController } from '../controllers/leave.controller.js';
+import { authenticateToken, requireRole, requireSameUserOrAdmin } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
 const router = Router();

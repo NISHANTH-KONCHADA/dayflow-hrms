@@ -53,7 +53,7 @@ export class LoginIdService {
 
     // Ensure uniqueness in case of collisions
     let exists = await prisma.employee.findFirst({
-      where: { companyId, loginId },
+      where: { loginId },
     });
 
     let extraIncrement = 1;
@@ -61,7 +61,7 @@ export class LoginIdService {
       const altSerial = (countInYear + 1 + extraIncrement).toString().padStart(4, '0');
       loginId = `${companyCode}${nameCode}${year}${altSerial}`;
       exists = await prisma.employee.findFirst({
-        where: { companyId, loginId },
+        where: { loginId },
       });
       extraIncrement++;
     }

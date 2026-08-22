@@ -607,6 +607,11 @@ export class EmployeeService {
       };
     });
 
+    const formattedDocuments = (employee.documents || []).map((doc) => ({
+      ...doc,
+      sizeBytes: doc.sizeBytes !== null && doc.sizeBytes !== undefined ? Number(doc.sizeBytes) : null,
+    }));
+
     const isOwner = requestingUser.employeeId === employee.id || requestingUser.userId === employee.user?.id;
     const isAdminOrHr = requestingUser.role === 'ADMIN' || requestingUser.role === 'HR_OFFICER';
 
@@ -621,6 +626,7 @@ export class EmployeeService {
       statusDetail,
       todayAttendance,
       todayLeave,
+      documents: formattedDocuments,
       leaveAllocations: leaveAllocationsWithRemaining,
     };
 
