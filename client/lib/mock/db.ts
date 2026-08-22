@@ -18,15 +18,8 @@ import type {
   User,
 } from "@/lib/types";
 
-/**
- * In-memory mock "database" — a mutable clone of the JSON fixtures. Mock
- * write operations (login, password reset, check-in, apply leave, etc.)
- * mutate these arrays directly so the UI can react to changes without a
- * real backend. State resets on every full page reload; that's expected
- * for a mock layer and goes away once lib/api/* talks to the real server.
- */
 export const db = {
-  users: structuredClone(usersData) as User[],
+  users: structuredClone(usersData) as unknown as User[],
   privateInfo: structuredClone(privateInfoData) as EmployeePrivateInfo[],
   skills: structuredClone(skillsData) as Skill[],
   certifications: structuredClone(certificationsData) as Certification[],
@@ -34,18 +27,11 @@ export const db = {
   leaveBalances: structuredClone(leaveBalancesData) as LeaveBalance[],
   leaveRequests: structuredClone(leaveRequestsData) as LeaveRequest[],
   payroll: structuredClone(payrollData) as SalaryStructure[],
-  /**
-   * Mock credential store, keyed by user id — a stand-in for server-side
-   * password hashes. Every seed account shares the same demo password;
-   * accounts created via the admin "New Employee" form get their own
-   * generated temp password here.
-   */
   credentials: Object.fromEntries(
-    (structuredClone(usersData) as User[]).map((user) => [user.id, "Password@123"]),
+    (structuredClone(usersData) as unknown as User[]).map((user) => [user.id, "Password@123"]),
   ) as Record<string, string>,
 };
 
-/** Cheap unique id for records created by mock write operations. */
 export function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }

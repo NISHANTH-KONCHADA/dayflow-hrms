@@ -96,6 +96,7 @@ export async function createEmployee(
 
   const user: User = {
     id,
+    employeeId: id,
     loginId,
     email: input.email.trim(),
     role: input.role,
@@ -117,7 +118,7 @@ export async function createEmployee(
     location: input.location,
     dateOfJoining: input.dateOfJoining,
     profilePictureUrl: null,
-    resumeUrl: null,
+    resumeUrl: undefined,
     about: "",
     whatILoveAboutMyJob: "",
     interests: "",
