@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { EmployeeController } from '../controllers/employee.controller.js';
 import { SkillController } from '../controllers/skill.controller.js';
 import { CertificationController } from '../controllers/certification.controller.js';
+import { DocumentController } from '../controllers/document.controller.js';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -222,6 +223,44 @@ const deleteEmpCertSchema = {
   }),
 };
 
+const addDocumentSchema = {
+  body: z.object({
+    type: z.enum(['RESUME', 'CERTIFICATION', 'OTHER', 'resume', 'certification', 'other']).optional(),
+    name: z.string().min(1, 'Document name is required'),
+    fileUrl: z.string().min(1, 'File URL is required'),
+    mimeType: z.string().optional(),
+    sizeBytes: z.number().int().nonnegative().optional(),
+  }),
+};
+
+const listDocumentsSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+  }),
+  query: z.object({
+    type: z.enum(['RESUME', 'CERTIFICATION', 'OTHER', 'resume', 'certification', 'other']).optional(),
+  }),
+};
+
+const listMeDocumentsSchema = {
+  query: z.object({
+    type: z.enum(['RESUME', 'CERTIFICATION', 'OTHER', 'resume', 'certification', 'other']).optional(),
+  }),
+};
+
+const deleteMeDocSchema = {
+  params: z.object({
+    documentId: z.string().uuid('Invalid document ID'),
+  }),
+};
+
+const deleteEmpDocSchema = {
+  params: z.object({
+    id: z.string().uuid('Invalid employee ID'),
+    documentId: z.string().uuid('Invalid document ID'),
+  }),
+};
+
 // Current Employee Profile (/me)
 router.get('/me', EmployeeController.getCurrentProfile);
 router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
@@ -263,6 +302,20 @@ router.delete('/me/certifications/:certificationId', validate(deleteMeCertSchema
   return CertificationController.delete(req, res, next);
 });
 
+// Current Employee Documents (/me/documents)
+router.get('/me/documents', validate(listMeDocumentsSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return DocumentController.getAll(req, res, next);
+});
+router.post('/me/documents', validate(addDocumentSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return DocumentController.create(req, res, next);
+});
+router.delete('/me/documents/:documentId', validate(deleteMeDocSchema), (req, res, next) => {
+  req.params.id = req.user.employeeId;
+  return DocumentController.delete(req, res, next);
+});
+
 // Employee Skills (/:id/skills)
 router.get('/:id/skills', validate(getByIdSchema), SkillController.getEmployeeSkills);
 router.post('/:id/skills', validate(assignEmployeeSkillSchema), SkillController.assignSkill);
@@ -274,6 +327,11 @@ router.post('/:id/certifications', validate({ params: z.object({ id: z.string().
 router.patch('/:id/certifications/:certificationId', validate(updateEmpCertSchema), CertificationController.update);
 router.put('/:id/certifications/:certificationId', validate(updateEmpCertSchema), CertificationController.update);
 router.delete('/:id/certifications/:certificationId', validate(deleteEmpCertSchema), CertificationController.delete);
+
+// Employee Documents (/:id/documents)
+router.get('/:id/documents', validate(listDocumentsSchema), DocumentController.getAll);
+router.post('/:id/documents', validate({ params: z.object({ id: z.string().uuid() }), body: addDocumentSchema.body }), DocumentController.create);
+router.delete('/:id/documents/:documentId', validate(deleteEmpDocSchema), DocumentController.delete);
 
 // Employee CRUD (/ and /:id)
 router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);
