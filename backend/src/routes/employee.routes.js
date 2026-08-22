@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { EmployeeController } from '../controllers/employee.controller.js';
-import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
+import { AttendanceController } from '../controllers/attendance.controller.js';
+import { authenticateToken, requireRole, requireSameUserOrAdmin } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
 const router = Router();
@@ -96,6 +97,10 @@ const getByIdSchema = {
     id: z.string().uuid('Invalid employee ID'),
   }),
 };
+
+// Employee attendance endpoints
+router.get('/:id/attendance', requireSameUserOrAdmin(), validate(getByIdSchema), AttendanceController.getEmployeeAttendance);
+router.get('/:id/attendance/summary', requireSameUserOrAdmin(), validate(getByIdSchema), AttendanceController.getEmployeeSummary);
 
 // Routes
 router.post('/', requireRole('ADMIN', 'HR_OFFICER'), validate(createEmployeeSchema), EmployeeController.create);
