@@ -8,6 +8,8 @@ import type {
   EmployeePrivateInfo,
   LeaveBalance,
   LeaveRequest,
+  LeaveRequestStatus,
+  LeaveType,
   SalaryBreakdown,
   SalaryStructure,
   Skill,
@@ -190,6 +192,85 @@ export function getLeaveRequestsForUser(userId: string): Promise<LeaveRequest[]>
 
 export function getAllLeaveRequests(): Promise<LeaveRequest[]> {
   return resolveAfter([...db.leaveRequests].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+}
+
+function daysBetweenInclusive(start: string, end: string): number {
+  const startMs = new Date(`${start}T00:00:00Z`).getTime();
+  const endMs = new Date(`${end}T00:00:00Z`).getTime();
+  return Math.round((endMs - startMs) / 86_400_000) + 1;
+}
+
+export interface ApplyLeaveInput {
+  leaveType: LeaveType;
+  startDate: string;
+  endDate: string;
+  remarks: string;
+  attachmentUrl: string | null;
+}
+
+export async function applyLeave(
+  userId: string,
+  input: ApplyLeaveInput,
+): Promise<{ request: LeaveRequest } | { error: string }> {
+  if (input.endDate < input.startDate) {
+    return resolveAfter({ error: "End date can't be before the start date." });
+  }
+
+  const requestedDays = daysBetweenInclusive(input.startDate, input.endDate);
+
+  if (input.leaveType !== "unpaid") {
+    const balance = db.leaveBalances.find(
+      (candidate) => candidate.userId === userId && candidate.leaveType === input.leaveType,
+    );
+    if (!balance || balance.daysAvailable < requestedDays) {
+      return resolveAfter({ error: `Not enough ${input.leaveType} leave balance available.` });
+    }
+  }
+
+  const request: LeaveRequest = {
+    id: generateId("leave"),
+    userId,
+    leaveType: input.leaveType,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    remarks: input.remarks,
+    attachmentUrl: input.attachmentUrl,
+    status: "pending",
+    reviewerComment: null,
+    reviewedBy: null,
+    createdAt: new Date().toISOString(),
+  };
+
+  db.leaveRequests.push(request);
+  emitMockEvent("leave:update");
+  return resolveAfter({ request });
+}
+
+export async function reviewLeaveRequest(
+  requestId: string,
+  decision: Extract<LeaveRequestStatus, "approved" | "rejected">,
+  comment: string,
+  reviewerId: string,
+): Promise<LeaveRequest | undefined> {
+  const request = db.leaveRequests.find((candidate) => candidate.id === requestId);
+  if (!request) return resolveAfter(undefined);
+
+  request.status = decision;
+  request.reviewerComment = comment.trim() || null;
+  request.reviewedBy = reviewerId;
+
+  if (decision === "approved" && request.leaveType !== "unpaid") {
+    const balance = db.leaveBalances.find(
+      (candidate) => candidate.userId === request.userId && candidate.leaveType === request.leaveType,
+    );
+    if (balance) {
+      const days = daysBetweenInclusive(request.startDate, request.endDate);
+      balance.daysAvailable = Math.max(0, balance.daysAvailable - days);
+    }
+  }
+
+  emitMockEvent("leave:update");
+  return resolveAfter(request);
 }
 
 export function getSalaryStructure(userId: string): Promise<SalaryStructure | undefined> {
