@@ -16,6 +16,7 @@ export default function TopNav() {
     { href: "/dashboard", label: user.role === "admin" ? "Employees" : "Dashboard" },
     { href: "/attendance", label: "Attendance" },
     { href: "/time-off", label: "Time Off" },
+    { href: "/payroll", label: "Payroll & Payslips" },
   ];
 
   return (

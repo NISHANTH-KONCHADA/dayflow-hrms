@@ -1,4 +1,5 @@
 export type Role = "admin" | "employee";
+export type BackendRole = "ADMIN" | "HR_OFFICER" | "EMPLOYEE";
 
 export type AttendanceStatus = "present" | "absent" | "half_day" | "leave";
 
@@ -8,9 +9,12 @@ export type LeaveRequestStatus = "pending" | "approved" | "rejected";
 
 export interface User {
   id: string;
+  employeeId: string;
   loginId: string;
+  employeeCode?: string;
   email: string;
   role: Role;
+  rawRole?: BackendRole;
   mustResetPassword: boolean;
 
   firstName: string;
@@ -24,7 +28,9 @@ export interface User {
   address: string;
 
   department: string;
+  departmentId?: string | null;
   jobPosition: string;
+  jobPositionId?: string | null;
   managerId: string | null;
   managerName: string | null;
   company: string;
@@ -69,30 +75,47 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   workHours: number | null;
   extraHours: number | null;
+  notes?: string | null;
 }
 
 export interface LeaveBalance {
+  id?: string;
   userId: string;
-  leaveType: LeaveType;
+  leaveType: LeaveType | string;
+  leaveTypeId?: string;
+  leaveTypeName?: string;
   daysAvailable: number;
+  allocatedDays?: number;
+  usedDays?: number;
 }
 
 export interface LeaveRequest {
   id: string;
   userId: string;
-  leaveType: LeaveType;
+  leaveType: LeaveType | string;
+  leaveTypeId?: string;
+  leaveTypeName?: string;
   startDate: string;
   endDate: string;
+  requestedDays?: number;
   remarks: string;
   attachmentUrl: string | null;
+  attachmentName?: string | null;
   status: LeaveRequestStatus;
   reviewerComment: string | null;
   reviewedBy: string | null;
   createdAt: string;
+  user?: {
+    firstName: string;
+    lastName: string;
+    employeeCode?: string;
+    department?: string;
+  };
 }
 
 export interface SalaryStructure {
   userId: string;
+  monthlyWage?: number;
   wage: number;
   basicPct: number;
   hraPct: number;

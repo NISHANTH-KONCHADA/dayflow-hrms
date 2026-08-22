@@ -1,7 +1,21 @@
+import { getStoredToken } from './auth';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+function getAuthHeaders(): HeadersInit {
+  const token = getStoredToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 export async function getEmployeeSalary(employeeId: string) {
   const response = await fetch(`${API_BASE_URL}/admin/employees/${employeeId}/salary`, {
+    headers: getAuthHeaders(),
     credentials: 'include',
   });
   const result = await response.json();
@@ -12,7 +26,7 @@ export async function getEmployeeSalary(employeeId: string) {
 export async function createEmployeeSalary(employeeId: string, data: Record<string, any>) {
   const response = await fetch(`${API_BASE_URL}/admin/employees/${employeeId}/salary`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -24,7 +38,7 @@ export async function createEmployeeSalary(employeeId: string, data: Record<stri
 export async function updateEmployeeSalary(employeeId: string, data: Record<string, any>) {
   const response = await fetch(`${API_BASE_URL}/admin/employees/${employeeId}/salary`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
@@ -36,7 +50,7 @@ export async function updateEmployeeSalary(employeeId: string, data: Record<stri
 export async function previewEmployeeSalary(employeeId: string, data: Record<string, any>) {
   const response = await fetch(`${API_BASE_URL}/admin/employees/${employeeId}/salary/preview`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     credentials: 'include',
     body: JSON.stringify(data),
   });
