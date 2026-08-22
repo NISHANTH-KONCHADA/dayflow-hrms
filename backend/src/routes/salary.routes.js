@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { SalaryController } from '../controllers/salary.controller.js';
+import { PayrollController } from '../controllers/payroll.controller.js';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 
@@ -13,6 +14,18 @@ router.use(requireRole('ADMIN', 'HR_OFFICER'));
 const salaryParamsSchema = {
   params: z.object({
     employeeId: z.string().uuid('Invalid employee ID'),
+  }),
+};
+
+const getEmployeePayrollSchema = {
+  params: z.object({
+    employeeId: z.string().uuid('Invalid employee ID'),
+  }),
+  query: z.object({
+    year: z.string().optional(),
+    month: z.string().optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
   }),
 };
 
@@ -75,5 +88,7 @@ router.get('/:employeeId/salary', validate(salaryParamsSchema), SalaryController
 router.post('/:employeeId/salary', validate(createSalarySchema), SalaryController.createSalaryStructure);
 router.patch('/:employeeId/salary', validate(updateSalarySchema), SalaryController.updateSalaryStructure);
 router.post('/:employeeId/salary/preview', validate(previewSalarySchema), SalaryController.previewSalary);
+
+router.get('/:employeeId/payroll', validate(getEmployeePayrollSchema), PayrollController.getEmployeePayroll);
 
 export default router;
