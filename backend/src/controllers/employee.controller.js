@@ -117,12 +117,14 @@ export class EmployeeController {
       const { id } = req.params;
       const result = await EmployeeService.deleteEmployee({
         companyId: req.user.companyId,
+        requestingUser: req.user,
         employeeId: id,
       });
 
       return ApiResponse.success(res, {
         statusCode: 200,
         message: result.message,
+        data: result,
       });
     } catch (err) {
       next(err);

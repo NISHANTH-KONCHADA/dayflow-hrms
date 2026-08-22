@@ -875,9 +875,9 @@ export class EmployeeService {
   }
 
   /**
-   * Deactivate an employee
+   * Deactivate / offboard an employee (Admin only)
    */
-  static async deleteEmployee({ companyId, employeeId }) {
+  static async deleteEmployee({ companyId, requestingUser, employeeId }) {
     const employee = await prisma.employee.findFirst({
       where: { id: employeeId, companyId },
       include: { user: true },
@@ -887,10 +887,17 @@ export class EmployeeService {
       throw new ApiError('Employee not found', 404);
     }
 
+    // Prevent Admin from deleting their own active session account
+    if (requestingUser.employeeId === employeeId || requestingUser.userId === employee.user?.id) {
+      throw new ApiError('Admin cannot deactivate their own active account', 400);
+    }
+
+    const leavingDate = new Date();
+
     await prisma.$transaction(async (tx) => {
       await tx.employee.update({
         where: { id: employeeId },
-        data: { dateOfLeaving: new Date() },
+        data: { dateOfLeaving: leavingDate },
       });
 
       if (employee.user) {
@@ -901,6 +908,10 @@ export class EmployeeService {
       }
     });
 
-    return { message: 'Employee deactivated successfully' };
+    return {
+      message: `Employee ${employee.firstName} ${employee.lastName} has been deactivated successfully`,
+      employeeId,
+      dateOfLeaving: leavingDate,
+    };
   }
 }
