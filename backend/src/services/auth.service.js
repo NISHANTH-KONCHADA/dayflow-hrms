@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/db.js';
 import { ApiError } from '../utils/apiResponse.js';
 import { LoginIdService } from './loginId.service.js';
+import { EmailService } from './email.service.js';
 
 export class AuthService {
   /**
@@ -149,7 +150,7 @@ export class AuthService {
           passwordHash,
           role: 'ADMIN',
           mustChangePassword: false,
-          emailVerifiedAt: new Date(),
+          emailVerifiedAt: null,
         },
       });
 
@@ -200,6 +201,22 @@ export class AuthService {
       { expiresIn }
     );
 
+    // Generate Email Verification Token and send verification email
+    const verificationToken = EmailService.generateVerificationToken({
+      userId: result.user.id,
+      email: result.user.email,
+    });
+
+    try {
+      await EmailService.sendVerificationEmail({
+        to: result.user.email,
+        name: firstName,
+        token: verificationToken,
+      });
+    } catch (mailErr) {
+      console.warn('Could not dispatch verification email upon registration:', mailErr.message);
+    }
+
     return {
       token,
       company: result.company,
@@ -208,8 +225,11 @@ export class AuthService {
         email: result.user.email,
         role: result.user.role,
         mustChangePassword: result.user.mustChangePassword,
+        isEmailVerified: false,
+        emailVerifiedAt: null,
         employee: result.employee,
       },
+      verificationToken,
     };
   }
 
@@ -284,6 +304,8 @@ export class AuthService {
         email: user.email,
         role: user.role,
         mustChangePassword: user.mustChangePassword,
+        isEmailVerified: !!user.emailVerifiedAt,
+        emailVerifiedAt: user.emailVerifiedAt,
         company: user.company,
         employee: user.employee,
       },
@@ -355,9 +377,114 @@ export class AuthService {
       email: user.email,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
+      isEmailVerified: !!user.emailVerifiedAt,
+      emailVerifiedAt: user.emailVerifiedAt,
       lastLoginAt: user.lastLoginAt,
       company: user.company,
       employee: user.employee,
+    };
+  }
+
+  /**
+   * Verify User Email Address using signed verification token
+   */
+  static async verifyEmail({ token }) {
+    const decoded = EmailService.verifyVerificationToken(token);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        employee: {
+          select: { id: true, firstName: true, lastName: true, employeeCode: true, loginId: true },
+        },
+        company: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new ApiError('User account not found', 404);
+    }
+
+    if (user.emailVerifiedAt) {
+      return {
+        message: 'Email address is already verified',
+        isEmailVerified: true,
+        emailVerifiedAt: user.emailVerifiedAt,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: true,
+          emailVerifiedAt: user.emailVerifiedAt,
+          company: user.company,
+          employee: user.employee,
+        },
+      };
+    }
+
+    const verifiedDate = new Date();
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerifiedAt: verifiedDate },
+    });
+
+    return {
+      message: 'Email address verified successfully',
+      isEmailVerified: true,
+      emailVerifiedAt: updatedUser.emailVerifiedAt,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        isEmailVerified: true,
+        emailVerifiedAt: updatedUser.emailVerifiedAt,
+        company: user.company,
+        employee: user.employee,
+      },
+    };
+  }
+
+  /**
+   * Resend Verification Email to a registered user
+   */
+  static async resendVerificationEmail({ email, userId }) {
+    let user = null;
+    if (userId) {
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { employee: true },
+      });
+    } else if (email) {
+      user = await prisma.user.findUnique({
+        where: { email: email.trim().toLowerCase() },
+        include: { employee: true },
+      });
+    }
+
+    if (!user) {
+      throw new ApiError('No user account found with this email address', 404);
+    }
+
+    if (user.emailVerifiedAt) {
+      throw new ApiError('Email address is already verified', 400);
+    }
+
+    const token = EmailService.generateVerificationToken({
+      userId: user.id,
+      email: user.email,
+    });
+
+    await EmailService.sendVerificationEmail({
+      to: user.email,
+      name: user.employee?.firstName || 'User',
+      token,
+    });
+
+    return {
+      message: 'Verification email has been sent successfully',
+      email: user.email,
+      token,
     };
   }
 }

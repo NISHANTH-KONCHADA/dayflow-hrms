@@ -4,6 +4,7 @@ import prisma from '../config/prisma.js';
 import { ApiError } from '../utils/apiResponse.js';
 import { CredentialService } from './credential.service.js';
 import { LoginIdService } from './loginId.service.js';
+import { EmailService } from './email.service.js';
 
 export class EmployeeService {
   /**
@@ -500,6 +501,17 @@ export class EmployeeService {
         },
       },
     });
+
+    try {
+      await EmailService.sendWelcomeCredentialsEmail({
+        to: workEmail,
+        name: `${firstName} ${lastName || ''}`.trim(),
+        loginId,
+        temporaryPassword,
+      });
+    } catch (emailErr) {
+      console.warn('Could not dispatch welcome credentials email:', emailErr.message);
+    }
 
     return {
       employee: fullEmployee,

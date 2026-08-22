@@ -34,10 +34,27 @@ const changePasswordSchema = {
   }),
 };
 
+const verifyEmailSchema = {
+  body: z.object({
+    token: z.string().min(1, 'Verification token is required'),
+  }).optional(),
+};
+
+const resendVerificationSchema = {
+  body: z.object({
+    email: z.string().email('Invalid email address').optional(),
+  }),
+};
+
 router.post('/register', validate(registerSchema), AuthController.register);
 router.post('/login', validate(loginSchema), AuthController.login);
 router.post('/change-password', authenticateToken, validate(changePasswordSchema), AuthController.changePassword);
 router.get('/me', authenticateToken, AuthController.getMe);
 router.post('/logout', AuthController.logout);
+
+// Email Verification Endpoints
+router.post('/verify-email', validate(verifyEmailSchema), AuthController.verifyEmail);
+router.get('/verify-email', AuthController.verifyEmail);
+router.post('/resend-verification', validate(resendVerificationSchema), AuthController.resendVerification);
 
 export default router;

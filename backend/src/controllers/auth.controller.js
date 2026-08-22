@@ -81,4 +81,35 @@ export class AuthController {
       message: 'Logged out successfully',
     });
   }
+
+  static async verifyEmail(req, res, next) {
+    try {
+      const token = req.body?.token || req.query?.token;
+      const result = await AuthService.verifyEmail({ token });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: result.message,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async resendVerification(req, res, next) {
+    try {
+      const email = req.body?.email;
+      const userId = req.user?.userId;
+      const result = await AuthService.resendVerificationEmail({ email, userId });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: result.message,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
