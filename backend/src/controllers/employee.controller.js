@@ -45,6 +45,51 @@ export class EmployeeController {
   }
 
   /**
+   * GET /api/employees/me
+   * Retrieve currently authenticated employee's full profile
+   */
+  static async getCurrentProfile(req, res, next) {
+    try {
+      const employee = await EmployeeService.getEmployeeById({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: req.user.employeeId,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Current profile retrieved successfully',
+        data: employee,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * PATCH/PUT /api/employees/me
+   * Update currently authenticated employee's self-service profile fields
+   */
+  static async updateCurrentProfile(req, res, next) {
+    try {
+      const updated = await EmployeeService.updateEmployee({
+        companyId: req.user.companyId,
+        requestingUser: req.user,
+        employeeId: req.user.employeeId,
+        updateData: req.body,
+      });
+
+      return ApiResponse.success(res, {
+        statusCode: 200,
+        message: 'Your profile has been updated successfully',
+        data: updated,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
    * POST /api/employees
    * Create new employee with auto-provisioning
    */

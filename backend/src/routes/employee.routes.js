@@ -115,13 +115,29 @@ const updateEmployeeSchema = {
   }),
 };
 
+const updateMeSchema = {
+  body: z.object({
+    phone: z.string().optional(),
+    personalEmail: z.string().email('Invalid personal email address').optional(),
+    address: z.string().optional(),
+    about: z.string().optional(),
+    interestsHobbies: z.string().optional(),
+    profilePictureUrl: z.string().optional(),
+  }),
+};
+
 const getByIdSchema = {
   params: z.object({
     id: z.string().uuid('Invalid employee ID'),
   }),
 };
 
-// Routes
+// Current Employee Profile (/me)
+router.get('/me', EmployeeController.getCurrentProfile);
+router.patch('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
+router.put('/me', validate(updateMeSchema), EmployeeController.updateCurrentProfile);
+
+// Employee CRUD (/ and /:id)
 router.get('/', validate(listEmployeesSchema), EmployeeController.getAll);
 router.post('/', requireRole('ADMIN', 'HR_OFFICER'), validate(createEmployeeSchema), EmployeeController.create);
 router.get('/:id', validate(getByIdSchema), EmployeeController.getById);
